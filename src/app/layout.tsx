@@ -1,9 +1,7 @@
 
 import "./globals.css";
 import SessionProviderComponent from "./components/SessionProviderComponent";
-import Head from "next/head";
 import { Metadata } from "next";
-
 
 
 export const metadata: Metadata = {
