@@ -5,7 +5,8 @@ import WeekNavigation from './components/WeekNavigation';
 import SessionCard from './components/SessionCard';
 import OverviewCharts from './components/OverviewCharts';
 import ReferenceModal from './components/ReferenceModal';
-import { TrainingBlock as TrainingBlockType } from './lib/definitions'; 
+import { TrainingBlock as TrainingBlockType } from './lib/definitions';
+import GeneratingOverlay from './components/GeneratingOverlay';
 
 export default function HomePage() {
     const [trainingBlocks, setTrainingBlocks] = useState<TrainingBlockType[]>([]);
@@ -15,6 +16,15 @@ export default function HomePage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [genMessages] = useState<string[]>([
+        'Analizando comentarios previos...',
+        'Generando nuevo bloque de entrenamiento...',
+        'Actualizando la base de datos...',
+        'Finalizando...',
+    ]);
+    const [genStep, setGenStep] = useState(0);
+    const [showSuccess, setShowSuccess] = useState(false);
 
     // Función para cargar los datos desde la API
     const fetchTrainingData = async () => {
@@ -50,11 +60,20 @@ export default function HomePage() {
         fetchTrainingData();
     }, []);
 
+    
+
     const handleGenerateNextBlock = async () => {
         if (!activeBlock) return;
         setIsGenerating(true);
+        setShowSuccess(false);
+        setGenStep(0);
         setError(null);
+
         try {
+            // Paso 0: Analizando comentarios previos
+            await new Promise(r => setTimeout(r, 1000));
+            setGenStep(1);
+
             const completedBlockNumber = activeBlock.blockNumber;
             const response = await fetch('/api/generate-next-block', {
                 method: 'POST',
@@ -67,18 +86,27 @@ export default function HomePage() {
                 throw new Error(errorData.message || 'Error al generar el nuevo bloque.');
             }
 
+            setGenStep(2);
+
             const { newBlock } = await response.json();
-            
-            // Actualizar el estado para reflejar el nuevo bloque inmediatamente
+
             const updatedBlocks = [...trainingBlocks, newBlock];
             setTrainingBlocks(updatedBlocks);
-            setActiveBlockIndex(updatedBlocks.length - 1); // Navegar al nuevo bloque
+            setActiveBlockIndex(updatedBlocks.length - 1);
             setActiveWeekIndex(0);
+
+            setGenStep(3);
+            await new Promise(r => setTimeout(r, 1500)); // Mostrar mensaje final
+
+            setShowSuccess(true);
+            setTimeout(() => {
+                setShowSuccess(false);
+                setIsGenerating(false);
+            }, 2000);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (err: any) {
             setError(err.message);
             alert(`Error: ${err.message}`);
-        } finally {
             setIsGenerating(false);
         }
     };
@@ -87,7 +115,7 @@ export default function HomePage() {
         const newIndex = direction === 'next' ? activeBlockIndex + 1 : activeBlockIndex - 1;
         if (newIndex >= 0 && newIndex < trainingBlocks.length) {
             setActiveBlockIndex(newIndex);
-            setActiveWeekIndex(0); // Reset a la semana 1 al cambiar de bloque
+            setActiveWeekIndex(0);
         }
     };
 
@@ -111,24 +139,33 @@ export default function HomePage() {
     const activeWeekData = activeBlock.weeks[activeWeekIndex];
 
     return (
+        <>
         <div className="bg-gray-50 min-h-screen">
             <div className="container mx-auto p-4 sm:p-6 lg:p-8 text-[#343a40]">
                 <header className="text-center mb-8">
                     <div className="flex justify-center items-center gap-4 mb-2">
-                        <button onClick={() => handleBlockNavigation('prev')} disabled={activeBlockIndex === 0} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button
+                            onClick={() => handleBlockNavigation('prev')}
+                            disabled={activeBlockIndex === 0}
+                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             &larr; Bloque Ant.
                         </button>
                         <h1 className="text-4xl md:text-5xl font-extrabold text-[#007bff] w-64 text-center">
                             Bloque {activeBlock.blockNumber}
                         </h1>
-                        <button onClick={() => handleBlockNavigation('next')} disabled={activeBlockIndex >= trainingBlocks.length - 1} className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button
+                            onClick={() => handleBlockNavigation('next')}
+                            disabled={activeBlockIndex >= trainingBlocks.length - 1}
+                            className="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
                             Bloque Sig. &rarr;
                         </button>
                     </div>
                     <p className="text-lg text-[#6c757d] mt-2">Tu camino para superar el crono de 1h14</p>
                 </header>
 
-                <OverviewCharts  block={activeBlock} />
+                <OverviewCharts block={activeBlock} />
 
                 <div className="sticky top-0 bg-gray-50/80 backdrop-blur-sm py-4 z-10 mb-8 rounded-lg">
                     <div className="flex justify-between items-center mb-4 px-2">
@@ -174,5 +211,20 @@ export default function HomePage() {
                 <ReferenceModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
             </div>
         </div>
+
+        {/* Overlay de generación */}
+        <GeneratingOverlay
+            isVisible={isGenerating && !showSuccess}
+            messages={genMessages}
+            currentStep={genStep}
+        />
+
+        {/* Mensaje éxito */}
+        {isGenerating && showSuccess && (
+            <div className="fixed inset-0 z-50 bg-green-700 bg-opacity-90 flex items-center justify-center text-white text-2xl font-bold">
+                ¡Bloque generado con éxito! 🚀
+            </div>
+        )}
+        </>
     );
 }

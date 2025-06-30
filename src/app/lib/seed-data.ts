@@ -39,41 +39,4 @@ export const initialBlock = [
       }
     ]
   },
-  {
-    blockNumber: 2,
-    weeks: [
-      {
-        weekNumber: 1,
-        sessions: [
-          { title: '🏃 Sesión 1: Carrera', focus: 'Consolidación de Ritmo.', details: `<li><b>Calentamiento:</b> 10 min trote suave (Ritmo C) + movilidad.</li><li><b>Principal:</b> 6 x 800m (Ritmo A). Descanso: 2'15" trote suave.</li><li><b>Calma:</b> 10 min trote suave (Ritmo C) + estiramientos.</li>` },
-          { title: '💪 Sesión 2: Fuerza', focus: 'Aumento de carga base.', details: `<li><b>A) Goblet Squat:</b> 4x10 (H: 28kg, M: 18kg)</li><li><b>B) Press Banca/Suelo con mancuernas:</b> 4x10 (H: 2x22kg, M: 2x14kg)</li><li><b>C) Remo Pendlay:</b> 4x10 (H: 55kg, M: 35kg)</li><li><b>D) Zancadas sin peso:</b> 3x24</li><li><b>E) Plancha con peso:</b> 3x45s (H: 10kg, M: 5kg)</li>` },
-          { title: '⚙️ Sesión 3: Híbrido', focus: 'Mayor resistencia a la fatiga.', details: `<li><b>Principal:</b> 5 Rondas por tiempo de:</li><li class="ml-4">600m carrera (Ritmo B)</li><li class="ml-4">25 Wall Balls (H: 6kg, M: 4kg)</li><li>Descanso: 75s entre rondas.</li>` }
-        ]
-      },
-      {
-        weekNumber: 2,
-        sessions: [
-          { title: '🏃 Sesión 1: Carrera', focus: 'Progresión de Tempo.', details: `<li><b>Calentamiento:</b> 10 min trote suave (Ritmo C).</li><li><b>Principal:</b> 3 x 1200m (Ritmo A/B). Descanso: 3'00" trote suave.</li><li><b>Calma:</b> 10 min trote suave (Ritmo C) + estiramientos.</li>`},
-          { title: '💪 Sesión 2: Fuerza', focus: 'Sobrecarga progresiva.', details: `<li><b>A) Back Squat:</b> 4x8 (H: 65kg, M: 45kg)</li><li><b>B) Press Militar con mancuernas:</b> 4x10 (H: 2x18kg, M: 2x12kg)</li><li><b>C) Dominadas/Jalón (con lastre si es posible):</b> 4x6-8</li><li><b>D) Zancadas con mancuernas:</b> 3x20 (H: 2x14kg, M: 2x10kg)</li><li><b>E) Elevación de piernas a la barra:</b> 3x10-12</li>`},
-          { title: '⚙️ Sesión 3: Híbrido', focus: 'Combinación de fuerza y cardio.', details: `<li><b>Principal:</b> 5 Rondas por tiempo de:</li><li class="ml-4">400m carrera (Ritmo A)</li><li class="ml-4">15 Kettlebell Swings (H: 28kg, M: 20kg)</li><li>Descanso: 90s entre rondas.</li>`}
-        ]
-      },
-      {
-        weekNumber: 3,
-        sessions: [
-          { title: '🏃 Sesión 1: Carrera', focus: 'Pico de volumen e intensidad.', details: `<li><b>Calentamiento:</b> 10 min trote suave (Ritmo C) + movilidad.</li><li><b>Principal:</b> 5 x 1000m (Ritmo A/B). Descanso: 2'45" trote suave.</li><li><b>Calma:</b> 10 min trote suave (Ritmo C) + estiramientos.</li>`},
-          { title: '💪 Sesión 2: Fuerza', focus: 'Pico de fuerza específica.', details: `<li><b>A) Peso Muerto Rumano:</b> 4x8 (H: 70kg, M: 50kg)</li><li><b>B) Press Banca con barra:</b> 4x6 (H: 65kg, M: 40kg)</li><li><b>C) Remo con mancuerna:</b> 4x10 (H: 24kg, M: 16kg)</li><li><b>D) Zancadas con Sandbag:</b> 3x24 (H: 30kg, M: 20kg)</li><li><b>E) Paseo del Granjero:</b> 3x50m (H: 2x28kg, M: 2x20kg)</li>`},
-          { title: '⚙️ Sesión 3: Híbrido', focus: 'Simulación de competición avanzada.', details: `<li><b>Por tiempo:</b></li><li class="ml-4">800m Carrera, 1000m SkiErg</li><li class="ml-4">800m Carrera, 50 Wall Balls (H: 9kg, M: 6kg)</li><li class="ml-4">800m Carrera, 40m Sled Push (H: 125kg, M: 100kg)</li>`}
-        ]
-      },
-      {
-        weekNumber: 4,
-        sessions: [
-          { title: '🏃 Sesión 1: Carrera', focus: 'Recuperación y técnica.', details: `<li><b>Principal:</b> 25 min carrera continua (Ritmo C).</li><li class="ml-4">Incluir 6 x 50m zancadas técnicas.</li><li><b>Calma:</b> 5 min trote muy suave + estiramientos.</li>`},
-          { title: '💪 Sesión 2: Fuerza', focus: 'Movilidad y descarga activa.', details: `<li><b>Circuito de movilidad:</b> 3 Rondas:</li><li class="ml-4">10 Sentadillas de cosaco por lado</li><li class="ml-4">10 Rotaciones torácicas en cuadrupedia</li><li class="ml-4">30s Plancha lateral por lado</li><li class="ml-4">10 "World's Greatest Stretch" por lado</li>`},
-          { title: '⚙️ Sesión 3: Híbrido', focus: 'Descarga con enfoque en habilidad.', details: `<li><b>Principal:</b> 4 Rondas de:</li><li class="ml-4">200m Remo (controlado)</li><li class="ml-4">10 Wall Balls (ligeros, H: 4kg, M: 2kg)</li><li class="ml-4">20m Zancadas (sin peso)</li><li>Descanso: Caminar 1 min entre rondas.</li>`}
-        ]
-      }
-    ]
-  }
 ];

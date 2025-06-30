@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Session } from '../lib/definitions';
+import Swal from 'sweetalert2';
 
 interface SessionCardProps {
   session: Session;
@@ -22,6 +23,11 @@ export default function SessionCard({
   const [showCommentArea, setShowCommentArea] = useState(false);
   const [isLoadingComment, setIsLoadingComment] = useState(false);
 
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [completedAt, setCompletedAt] = useState<Date | null>(null);
+  const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
+
+  // 👉 Traer comentario
   useEffect(() => {
     const fetchComment = async () => {
       if (!showCommentArea) return;
@@ -48,6 +54,30 @@ export default function SessionCard({
     fetchComment();
   }, [showCommentArea, blockNumber, weekIndex, sessionIndex]);
 
+  // 👉 Traer estado de completado y fecha
+  useEffect(() => {
+    const fetchCompletionStatus = async () => {
+      try {
+        const response = await fetch(
+          `/api/completion?blockNumber=${blockNumber}&weekIndex=${weekIndex}&sessionIndex=${sessionIndex}`
+        );
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.completed) {
+            setIsCompleted(true);
+            if (data.completedAt) {
+              setCompletedAt(new Date(data.completedAt));
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching completion status:', error);
+      }
+    };
+
+    fetchCompletionStatus();
+  }, [blockNumber, weekIndex, sessionIndex]);
+
   const handleSaveComment = async () => {
     if (!comment.trim()) return;
 
@@ -73,9 +103,75 @@ export default function SessionCard({
         setStatus(`Error: ${errorData.message}`);
       }
     } catch (error) {
-      console.log(error)
+      console.log(error);
       setStatus('Error de conexión.');
     } finally {
+      setTimeout(() => setStatus(''), 3000);
+    }
+  };
+
+  const handleCompleteSession = async () => {
+    if (isCompleted) return;
+
+    const result = await Swal.fire({
+      title: '¿Completar sesión?',
+      html: `
+        <p>Esta acción <strong>no se puede deshacer</strong>.</p>
+        <p>Una vez completada la sesión, <strong>no podrás agregar ni editar comentarios</strong>.</p>
+        <p>¿Estás seguro de que quieres continuar?</p>
+      `,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#d33',
+      confirmButtonText: 'Sí, completar',
+      cancelButtonText: 'Cancelar',
+      focusCancel: true,
+    });
+
+    if (!result.isConfirmed) {
+      return; // El usuario canceló
+    }
+
+    setIsLoadingCompleted(true);
+
+    try {
+      const response = await fetch('/api/completion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          blockNumber,
+          weekIndex,
+          sessionIndex,
+          completed: true,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setIsCompleted(true);
+        setStatus('¡Entreno completado!');
+        if (result?.status?.completedAt) {
+          setCompletedAt(new Date(result.status.completedAt));
+        }
+
+        await Swal.fire({
+          title: '¡Listo!',
+          text: 'La sesión fue marcada como completada y ya no podrás editar los comentarios.',
+          icon: 'success',
+          confirmButtonColor: '#16a34a',
+        });
+      } else {
+        const errorData = await response.json();
+        setStatus(`Error: ${errorData.message}`);
+        await Swal.fire('Error', errorData.message || 'No se pudo completar.', 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus('Error de conexión.');
+      await Swal.fire('Error', 'Error de conexión.', 'error');
+    } finally {
+      setIsLoadingCompleted(false);
       setTimeout(() => setStatus(''), 3000);
     }
   };
@@ -88,7 +184,38 @@ export default function SessionCard({
         className="space-y-2 list-disc list-inside mb-4"
         dangerouslySetInnerHTML={{ __html: session.details }}
       />
+
       <div className="mt-auto pt-4 border-t border-gray-200">
+        {/* ✅ Botón de completar entreno */}
+        <div className="mb-4">
+          {isCompleted ? (
+            <div className="text-green-600 font-semibold text-sm">
+              ✅ Entreno completado
+              {completedAt && (
+                <p className="text-gray-600 font-normal mt-1">
+                  Completado el:{' '}
+                  {completedAt.toLocaleString('es-ES', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleCompleteSession}
+              disabled={isLoadingCompleted}
+              className="bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              {isLoadingCompleted ? 'Guardando...' : 'Marcar como completado'}
+            </button>
+          )}
+        </div>
+
+        {/* Toggle comentarios */}
         <button
           onClick={() => setShowCommentArea(!showCommentArea)}
           className="text-blue-600 hover:text-blue-800 font-semibold text-sm mb-2 w-full text-left"
@@ -121,12 +248,13 @@ export default function SessionCard({
                   onChange={(e) => setComment(e.target.value)}
                   className="w-full p-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-[#007bff] focus:border-transparent"
                   placeholder="¿Cómo te sentiste? ¿Qué pesos usaste?"
+                  disabled={isCompleted}
                 />
                 <div className="flex justify-between items-center mt-2">
                   <button
                     onClick={handleSaveComment}
                     className="bg-[#fd7e14] text-white text-sm font-bold py-1 px-3 rounded-md hover:bg-[#e46f12] transition-colors disabled:opacity-50"
-                    disabled={status === 'Guardando...'}
+                    disabled={status === 'Guardando...' || isCompleted}
                   >
                     Guardar
                   </button>

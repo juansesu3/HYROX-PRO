@@ -78,3 +78,21 @@ const UserSchema = new Schema(
 );
 
 export const User = mongoose.models.User || mongoose.model("User", UserSchema);
+
+// --- Modelo de Estado de Sesión ---
+const SessionStatusSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  blockNumber: { type: Number, required: true },
+  weekIndex: { type: Number, required: true },
+  sessionIndex: { type: Number, required: true },
+  completed: { type: Boolean, default: false },
+  completedAt: { type: Date },
+});
+
+SessionStatusSchema.index(
+  { userId: 1, blockNumber: 1, weekIndex: 1, sessionIndex: 1 },
+  { unique: true }
+);
+
+export const SessionStatus =
+  mongoose.models.SessionStatus || mongoose.model('SessionStatus', SessionStatusSchema);
