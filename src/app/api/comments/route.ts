@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ message: 'Comentario guardado', data: newComment }, { status: 200 });
-
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Error al guardar el comentario:', error);
     return NextResponse.json({ message: 'Error al guardar', error: error.message }, { status: 500 });
