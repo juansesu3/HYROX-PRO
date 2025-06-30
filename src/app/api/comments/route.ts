@@ -20,7 +20,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'No autenticado' }, { status: 401 });
     }
     const userId = session.user.id;
-    
+
     await dbConnect();
 
     const { searchParams } = new URL(request.url);
@@ -28,23 +28,25 @@ export async function GET(request: Request) {
     const weekIndex = searchParams.get('weekIndex');
     const sessionIndex = searchParams.get('sessionIndex');
 
-    if (blockNumber === null || weekIndex === null || sessionIndex === null) {
-      return NextResponse.json({ message: 'Faltan parámetros de búsqueda (blockNumber, weekIndex, sessionIndex)' }, { status: 400 });
+    if (!blockNumber || !weekIndex || !sessionIndex) {
+      return NextResponse.json({ message: 'Faltan parámetros' }, { status: 400 });
     }
 
-    const comment = await Comment.findOne({
-      userId, // Filtrar por usuario
+    const comments = await Comment.find({
+      userId,
       blockNumber: parseInt(blockNumber),
       weekIndex: parseInt(weekIndex),
-      sessionIndex: parseInt(sessionIndex)
-    });
+      sessionIndex: parseInt(sessionIndex),
+    }).sort({ createdAt: -1 }); // Más recientes primero
 
-    return NextResponse.json(comment);
+    return NextResponse.json(comments);
+
   } catch (error) {
-    console.error('Error al obtener el comentario:', error);
-    return NextResponse.json({ message: 'Error al obtener el comentario' }, { status: 500 });
+    console.error('Error al obtener comentarios:', error);
+    return NextResponse.json({ message: 'Error al obtener comentarios' }, { status: 500 });
   }
 }
+
 
 
 // --- FUNCIÓN POST: Para guardar o actualizar un comentario del usuario logueado ---
@@ -60,22 +62,22 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { blockNumber, weekIndex, sessionIndex, comment } = body;
 
-    if (comment === null || comment === undefined) {
+    if (!comment?.trim()) {
       return NextResponse.json({ message: 'El comentario no puede estar vacío.' }, { status: 400 });
     }
 
-    // Lógica de "upsert": Actualiza si existe, crea si no.
-    const updatedComment = await Comment.findOneAndUpdate(
-      { userId, blockNumber, weekIndex, sessionIndex }, // Filtro para encontrar el documento
-      { userId, comment }, // Datos a actualizar o insertar
-      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true } // Opciones
-    );
+    const newComment = await Comment.create({
+      userId,
+      blockNumber,
+      weekIndex,
+      sessionIndex,
+      comment,
+    });
 
-    return NextResponse.json({ message: 'Comentario guardado', data: updatedComment }, { status: 200 });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return NextResponse.json({ message: 'Comentario guardado', data: newComment }, { status: 200 });
+
   } catch (error: any) {
     console.error('Error al guardar el comentario:', error);
-    // Devuelve el mensaje de error de validación de Mongoose si existe
     return NextResponse.json({ message: 'Error al guardar', error: error.message }, { status: 500 });
   }
 }

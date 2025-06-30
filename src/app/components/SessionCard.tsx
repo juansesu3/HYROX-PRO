@@ -18,7 +18,7 @@ export default function SessionCard({
   sessionIndex,
 }: SessionCardProps) {
   const [comment, setComment] = useState('');
-  const [savedComment, setSavedComment] = useState('');
+  const [comments, setComments] = useState<string[]>([]);
   const [status, setStatus] = useState('');
   const [showCommentArea, setShowCommentArea] = useState(false);
   const [isLoadingComment, setIsLoadingComment] = useState(false);
@@ -27,9 +27,9 @@ export default function SessionCard({
   const [completedAt, setCompletedAt] = useState<Date | null>(null);
   const [isLoadingCompleted, setIsLoadingCompleted] = useState(false);
 
-  // 👉 Traer comentario
+  // 👉 Traer todos los comentarios de la sesión
   useEffect(() => {
-    const fetchComment = async () => {
+    const fetchComments = async () => {
       if (!showCommentArea) return;
       setIsLoadingComment(true);
       try {
@@ -38,23 +38,23 @@ export default function SessionCard({
         );
         if (response.ok) {
           const data = await response.json();
-          if (data && data.comment) {
-            setSavedComment(data.comment);
+          if (Array.isArray(data)) {
+            setComments(data.map((c) => c.comment));
           } else {
-            setSavedComment('');
+            setComments([]);
           }
         }
       } catch (error) {
-        console.error('Error fetching comment:', error);
+        console.error('Error fetching comments:', error);
       } finally {
         setIsLoadingComment(false);
       }
     };
 
-    fetchComment();
+    fetchComments();
   }, [showCommentArea, blockNumber, weekIndex, sessionIndex]);
 
-  // 👉 Traer estado de completado y fecha
+  // 👉 Traer estado de completado
   useEffect(() => {
     const fetchCompletionStatus = async () => {
       try {
@@ -78,6 +78,7 @@ export default function SessionCard({
     fetchCompletionStatus();
   }, [blockNumber, weekIndex, sessionIndex]);
 
+  // 👉 Guardar nuevo comentario
   const handleSaveComment = async () => {
     if (!comment.trim()) return;
 
@@ -95,9 +96,11 @@ export default function SessionCard({
       });
 
       if (response.ok) {
-        setSavedComment(comment); // Mostrar el comentario recién guardado
-        setComment(''); // Limpiar input
+        setComment('');
         setStatus('¡Guardado!');
+        // Agregar el nuevo comentario a la lista
+        const data = await response.json();
+        setComments([data.data.comment, ...comments]);
       } else {
         const errorData = await response.json();
         setStatus(`Error: ${errorData.message}`);
@@ -110,6 +113,7 @@ export default function SessionCard({
     }
   };
 
+  // 👉 Marcar sesión como completada
   const handleCompleteSession = async () => {
     if (isCompleted) return;
 
@@ -130,7 +134,7 @@ export default function SessionCard({
     });
 
     if (!result.isConfirmed) {
-      return; // El usuario canceló
+      return; // Cancelado
     }
 
     setIsLoadingCompleted(true);
@@ -186,7 +190,7 @@ export default function SessionCard({
       />
 
       <div className="mt-auto pt-4 border-t border-gray-200">
-        {/* ✅ Botón de completar entreno */}
+        {/* ✅ Botón completar sesión */}
         <div className="mb-4">
           {isCompleted ? (
             <div className="text-green-600 font-semibold text-sm">
@@ -226,13 +230,22 @@ export default function SessionCard({
         {showCommentArea && (
           <div className="mt-2 animate-fade-in">
             {isLoadingComment ? (
-              <p className="text-gray-500 text-sm">Cargando comentario...</p>
+              <p className="text-gray-500 text-sm">Cargando comentarios...</p>
             ) : (
               <>
-                {savedComment && (
-                  <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 whitespace-pre-wrap">
-                    <strong>Comentario guardado:</strong>
-                    <p className="mt-1">{savedComment}</p>
+                {comments.length > 0 && (
+                  <div className="mb-3">
+                    <strong className="text-sm text-gray-700">Comentarios previos:</strong>
+                    <ul className="mt-2 space-y-2">
+                      {comments.map((c, i) => (
+                        <li
+                          key={i}
+                          className="p-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 whitespace-pre-wrap"
+                        >
+                          {c}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 
