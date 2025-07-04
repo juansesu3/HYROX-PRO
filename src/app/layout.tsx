@@ -2,6 +2,7 @@
 import "./globals.css";
 import SessionProviderComponent from "./components/SessionProviderComponent";
 import { Metadata } from "next";
+import Navigation from "./components/Navigation";
 
 
 export const metadata: Metadata = {
@@ -45,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-       <head>
+      <head>
         {/* Etiquetas meta para PWA que no van en el objeto metadata */}
         <meta name="theme-color" content="#111828" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -54,8 +55,10 @@ export default function RootLayout({
       <body
       >
         <SessionProviderComponent>
-      
-        {children}
+
+          {children}
+          {/* Aquí puedes agregar el componente de navegación si lo necesitas */}
+          <Navigation />
         </SessionProviderComponent>
       </body>
     </html>
