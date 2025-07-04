@@ -12,17 +12,31 @@ interface ChatConversationProps {
     agentName: string;
     avatar: string;
     agentId: string;  // <-- Nuevo!
-  }
+}
 
 
 const mockChats: Record<string, { id: string; sender: string; text: string; timestamp: string }[]> = {
     '1': [
-        { id: 'm1', sender: 'agent', text: '¡Hola Coach de Nutrición!', timestamp: '10:30 AM' },
+        { id: 'm1', sender: 'agent', text: '¡Hola soy tu Coach de Nutrición!', timestamp: '10:30 AM' },
         { id: 'm2', sender: 'user', text: '¿Qué puedo cenar hoy?', timestamp: '10:31 AM' },
+        { id: 'm3', sender: 'agent', text: 'Te envié algunas recetas saludables para esta semana.', timestamp: '10:32 AM' },
     ],
     '2': [
-        { id: 'm1', sender: 'agent', text: '¡Hola Coach Hyrox!', timestamp: '10:30 AM' },
+        { id: 'm1', sender: 'agent', text: '¡Hola soy tu Coach Hyrox!', timestamp: '10:30 AM' },
         { id: 'm2', sender: 'user', text: '¿Cuál es mi rutina de hoy?', timestamp: '10:31 AM' },
+        {
+            id: 'm3', sender: 'agent',
+            text: `⚙️ Hoy tienes un entrenamiento híbrido enfocado en resistencia a la fatiga.
+
+Principal: 4 rondas por tiempo de:
+- 600m carrera (Ritmo B)
+- 20 Wall Balls (Hombres: 6kg, Mujeres: 4kg)
+Descanso: 90 segundos entre rondas.
+
+Recuerda mantener un ritmo constante y concentrarte en la técnica para evitar lesiones. ¡Vamos con todo, tú puedes! 💪🔥`,
+            timestamp: '10:32 AM'
+        },
+        { id: 'm4', sender: 'agent', text: 'Recuerda hidratarte 💧 bien después de tu rutina.', timestamp: '10:30 AM' },
     ],
 };
 
@@ -102,21 +116,21 @@ export default function ChatConversation({ chatId, onBack, agentName, avatar, ag
                     <IoChevronBackOutline size={24} />
                 </motion.button>
                 <Link href={`/chat/profile-coach/${agentId}`} className="flex items-center">
-                <Image
-                    width={100}
-                    height={100}
-                    src={avatar}
-                    alt={`${agentName} avatar`}
-                    className="mr-3 h-10 w-10 rounded-full object-cover shadow-sm"
-                />
-                <div className="flex-1">
-                    <h2 className="text-xl font-semibold" style={{ color: '#ffffff' }}>
-                        {agentName}
-                    </h2>
-                    <p className="text-sm" style={{ color: '#99ff07' }}>
-                        Online
-                    </p>
-                </div>
+                    <Image
+                        width={100}
+                        height={100}
+                        src={avatar}
+                        alt={`${agentName} avatar`}
+                        className="mr-3 h-10 w-10 rounded-full object-cover shadow-sm"
+                    />
+                    <div className="flex-1">
+                        <h2 className="text-xl font-semibold" style={{ color: '#ffffff' }}>
+                            {agentName}
+                        </h2>
+                        <p className="text-sm" style={{ color: '#99ff07' }}>
+                            Online
+                        </p>
+                    </div>
                 </Link>
             </div>
 
@@ -158,41 +172,56 @@ export default function ChatConversation({ chatId, onBack, agentName, avatar, ag
             {/* Input */}
             <form
                 onSubmit={handleSendMessage}
-                className="flex items-center space-x-3 border-t border-gray-200 bg-white p-4"
+                className="flex items-center space-x-2 border-t border-gray-200 bg-white p-3
+             sm:space-x-3 sm:p-4"
             >
                 <motion.button
                     type="button"
-                    className="rounded-full p-2 hover:bg-gray-100"
+                    className="rounded-full p-1 hover:bg-gray-100
+               w-8 h-8 flex items-center justify-center"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     style={{ color: '#0149aa' }}
+                    aria-label="Adjuntar archivo"
                 >
-                    <IoAttachOutline size={24} />
+                    <IoAttachOutline size={18} />
                 </motion.button>
+
                 <motion.button
                     type="button"
-                    className="rounded-full p-2 hover:bg-gray-100"
+                    className="rounded-full p-1hover:bg-gray-100
+               w-8 h-8 flex items-center justify-center"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     style={{ color: '#0149aa' }}
+                    aria-label="Grabar voz"
                 >
-                    <IoMicOutline size={24} />
+                    <IoMicOutline size={18} />
                 </motion.button>
+
                 <input
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Escribe un mensaje..."
-                    className="flex-1 rounded-full border border-gray-300 px-4 py-2 focus:border-[#0149aa] focus:ring-1 focus:ring-[#0149aa] text-[#111828]"
+                    className="flex-grow rounded-full border border-gray-300 px-4 py-2
+               text-[#111828]
+               focus:border-[#0149aa] focus:ring-1 focus:ring-[#0149aa]
+               placeholder:text-gray-400
+               max-h-12
+               sm:text-base"
                 />
+
                 <motion.button
                     type="submit"
-                    className="rounded-full p-3 text-white shadow-md hover:opacity-90"
+                    className="rounded-full  text-white s hover:opacity-90
+              flex items-center justify-center"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    style={{ backgroundColor: '#0149aa' }}
+
+                    aria-label="Enviar mensaje"
                 >
-                    <IoSend size={20} />
+                    <IoSend size={20} color='blue' />
                 </motion.button>
             </form>
         </div>

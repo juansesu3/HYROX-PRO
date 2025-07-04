@@ -181,7 +181,7 @@ export default function SessionCard({
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md flex flex-col">
+    <div className="bg-white p-6 rounded-xl shadow-md flex flex-col ">
       <h3 className="text-xl font-bold mb-3">{session.title}</h3>
       <p className="text-sm text-gray-500 mb-4">{session.focus}</p>
       <ul
