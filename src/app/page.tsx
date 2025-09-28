@@ -7,7 +7,8 @@ import OverviewCharts from './components/OverviewCharts';
 import ReferenceModal from './components/ReferenceModal';
 import { TrainingBlock as TrainingBlockType } from './lib/definitions';
 import GeneratingOverlay from './components/GeneratingOverlay';
-
+import { trainers, Trainer } from '@/app/lib/coaches/coaches';
+import TrainerCard from '@/app/components/coaches/TrainerCard';
 export default function HomePage() {
     const [trainingBlocks, setTrainingBlocks] = useState<TrainingBlockType[]>([]);
     const [activeBlockIndex, setActiveBlockIndex] = useState(0);
@@ -133,8 +134,31 @@ export default function HomePage() {
     }
     
     if (!activeBlock) {
-        return <div className="flex justify-center items-center min-h-screen">No hay planes de entrenamiento disponibles. Por favor, asegúrate de haber poblado la base de datos.</div>;
-    }
+        return (
+          <div className="bg-gray-50 min-h-screen flex flex-col items-center justify-center p-8">
+            <h2 className="text-3xl font-bold text-gray-800 mb-4">¡Bienvenido a tu entrenamiento Hyrox! 🏋️‍♂️</h2>
+            <p className="text-gray-600 text-lg mb-8 text-center max-w-2xl">
+              Para comenzar a generar tu plan de entrenamiento, primero selecciona un entrenador. 
+              Cada uno tiene un estilo único de preparación, elige el que mejor se adapte a tus objetivos.
+            </p>
+      
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+              {trainers.map(trainer => (
+                <TrainerCard
+                  key={trainer.id}
+                  trainer={trainer}
+                  onSelect={(t) => {
+                    console.log("Entrenador seleccionado:", t);
+                    // Aquí llamas a tu API para guardar el entrenador y generar el primer bloque
+                    // fetch('/api/select-coach', { method: 'POST', body: JSON.stringify({ trainerId: t.id }) })
+                    //   .then(() => fetchTrainingData());
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
 
     const activeWeekData = activeBlock.weeks[activeWeekIndex];
 

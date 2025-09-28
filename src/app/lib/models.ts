@@ -1,5 +1,71 @@
 // app/lib/models.ts
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
+import { Model } from "mongoose";
+
+
+
+// --- NUEVO: Interfaz y Esquema para el Atleta ---
+// Cada atleta es un documento separado vinculado a una cuenta de usuario.
+export interface IAthlete extends Document {
+  userId: mongoose.Schema.Types.ObjectId; // Vínculo al usuario
+  username: string;
+  age: number;
+  weight: number;
+  height: number;
+  experience: string;
+  goal: string;
+  targetTime?: string;
+  strengths: string[];
+  weaknesses: string[];
+}
+
+const AthleteSchema: Schema<IAthlete> = new Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  username: { type: String, required: [true, 'El nombre de usuario es obligatorio.'], trim: true },
+  age: { type: Number, required: [true, 'La edad es obligatoria.'] },
+  weight: { type: Number, required: [true, 'El peso es obligatorio.'] },
+  height: { type: Number, required: [true, 'La altura es obligatoria.'] },
+  experience: { type: String, required: true },
+  goal: { type: String, required: true },
+  targetTime: { type: String, default: null },
+  strengths: [{ type: String }],
+  weaknesses: [{ type: String }],
+}, { timestamps: true });
+
+export const Athlete: Model<IAthlete> = mongoose.models.Athlete || mongoose.model<IAthlete>('Athlete', AthleteSchema);
+
+
+// --- ACTUALIZADO: Interfaz y Esquema para el Usuario (Cuenta) ---
+// El usuario ahora almacena credenciales, configuración de la cuenta y el plan generado por IA.
+export interface IUser extends Document {
+  email: string;
+  password?: string; // El password no se debería devolver en las consultas
+  category: 'individual' | 'doubles';
+  doublesType?: 'men' | 'women' | 'mixed';
+  trainingPlan?: string; // El plan generado por la IA
+}
+
+const UserSchema: Schema<IUser> = new Schema({
+  email: {
+    type: String,
+    required: [true, "Por favor, introduce un email."],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
+  },
+  password: {
+    type: String,
+    required: [true, "Por favor, introduce una contraseña."],
+    select: false, // Por defecto, no se devuelve la contraseña en las consultas
+  },
+  category: { type: String, enum: ['individual', 'doubles'], required: true },
+  doublesType: { type: String, enum: ['men', 'women', 'mixed'], default: null },
+  trainingPlan: { type: String, default: null },
+}, { timestamps: true });
+
+export const User: Model<IUser> = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);
+
 
 // --- Modelo de Comentarios ---
 // Ahora se asocia a un bloque y a una semana dentro de ese bloque.
@@ -47,37 +113,8 @@ export const TrainingBlock =
   mongoose.models.TrainingBlock ||
   mongoose.model("TrainingBlock", TrainingBlockSchema);
 
-const UserSchema = new Schema(
-  {
-    username: {
-      type: String,
-      required: [true, "Por favor, introduce un nombre de usuario."],
-      unique: true,
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: [true, "Por favor, introduce un email."],
-      unique: true,
-      match: [/.+\@.+\..+/, "Por favor, introduce un email válido."],
-    },
-    password: {
-      type: String,
-      required: [true, "Por favor, introduce una contraseña."],
-      select: false, // Por defecto, no se devuelve la contraseña en las consultas
-    },
-    age: { type: Number },
-    weight: { type: Number }, // en kg
-    height: { type: Number }, // en cm
-    physicalActivityLevel: {
-      type: String,
-      enum: ["sedentary", "light", "moderate", "active", "very_active"],
-    },
-  },
-  { timestamps: true }
-);
 
-export const User = mongoose.models.User || mongoose.model("User", UserSchema);
+
 
 // --- Modelo de Estado de Sesión ---
 const SessionStatusSchema = new Schema({
