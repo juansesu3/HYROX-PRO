@@ -1,30 +1,26 @@
-// src/app/lib/models/Comment.ts
-import mongoose, { Document, Schema, Model } from "mongoose";
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IComment extends Document {
-  userId: mongoose.Schema.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
   blockNumber: number;
-  weekIndex: number;
+  weekNumber: number;
   sessionIndex: number;
   comment: string;
+  rating?: number; // Del 1 al 10 (RPE o satisfacción)
   createdAt: Date;
 }
 
-const CommentSchema: Schema<IComment> = new Schema({
-  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  blockNumber: { type: Number, required: true },
-  weekIndex: { type: Number, required: true }, // 0 = Semana 1
-  sessionIndex: { type: Number, required: true }, // 0 = Sesión 1
-  comment: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
-});
-
-// Índice para buscar rápido comentarios de una sesión concreta
-CommentSchema.index(
-  { userId: 1, blockNumber: 1, weekIndex: 1, sessionIndex: 1 },
-  { unique: false }
+const CommentSchema = new Schema<IComment>(
+  {
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    blockNumber: { type: Number, required: true },
+    weekNumber: { type: Number, required: true },
+    sessionIndex: { type: Number, required: true },
+    comment: { type: String, required: true },
+    rating: { type: Number },
+  },
+  { timestamps: true }
 );
 
 export const Comment: Model<IComment> =
-  mongoose.models.Comment ||
-  mongoose.model<IComment>("Comment", CommentSchema);
+  mongoose.models.Comment || mongoose.model<IComment>('Comment', CommentSchema);

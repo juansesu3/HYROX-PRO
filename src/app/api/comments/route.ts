@@ -8,7 +8,7 @@ import dbConnect from '@/app/lib/dbConnect';
 import { Comment } from '@/app/lib/models';
 import { getServerSession } from "next-auth/next";
 
-import authOptions from '@/app/lib/auth/auth-options';
+import {authOptions} from '@/app/lib/auth/auth-options';
 
 // Extend the DefaultSession type to include the 'id' property
 

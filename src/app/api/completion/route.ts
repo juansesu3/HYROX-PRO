@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/app/lib/dbConnect';
 import { SessionStatus } from '@/app/lib/models';
 import { getServerSession } from 'next-auth/next';
-import authOptions from '@/app/lib/auth/auth-options';
+import {authOptions} from '@/app/lib/auth/auth-options';
 
 // ---------------------------
 // GET: Obtener estado completado
