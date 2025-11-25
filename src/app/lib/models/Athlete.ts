@@ -1,42 +1,48 @@
-// src/app/lib/models/Athlete.ts
-import mongoose, { Document, Schema, Model } from "mongoose";
+import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IAthlete extends Document {
-  userId: mongoose.Schema.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
   username: string;
+  
+  // 👇 AGREGADO: Campo de género obligatorio
+  gender: 'men' | 'women';
+  
   age: number;
   weight: number;
   height: number;
   experience: string;
   goal: string;
   targetTime?: string;
-  strengths: string[];
-  weaknesses: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  trainingId: mongoose.Types.ObjectId;
 }
 
-const AthleteSchema: Schema<IAthlete> = new Schema(
+const AthleteSchema = new Schema<IAthlete>(
   {
-    userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    username: {
-      type: String,
-      required: [true, "El nombre de usuario es obligatorio."],
-      trim: true,
+    userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    username: { type: String, required: true },
+    
+    // 👇 AGREGADO: Definición en Mongoose
+    gender: { 
+      type: String, 
+      enum: ['men', 'women'], 
+      required: true 
     },
-    age: { type: Number, required: [true, "La edad es obligatoria."] },
-    weight: { type: Number, required: [true, "El peso es obligatorio."] },
-    height: { type: Number, required: [true, "La altura es obligatoria."] },
+    
+    age: { type: Number, required: true },
+    weight: { type: Number, required: true },
+    height: { type: Number, required: true },
     experience: { type: String, required: true },
     goal: { type: String, required: true },
-    targetTime: { type: String, default: null },
-    strengths: [{ type: String }],
-    weaknesses: [{ type: String }],
+    targetTime: String,
+    strengths: [String],
+    weaknesses: [String],
+    trainingId: { type: Schema.Types.ObjectId, ref: 'Training', required: true },
   },
   { timestamps: true }
 );
 
-// Un mismo usuario no puede tener dos atletas con el mismo username
-AthleteSchema.index({ userId: 1, username: 1 }, { unique: true });
-
 export const Athlete: Model<IAthlete> =
   mongoose.models.Athlete ||
-  mongoose.model<IAthlete>("Athlete", AthleteSchema);
+  mongoose.model<IAthlete>('Athlete', AthleteSchema);

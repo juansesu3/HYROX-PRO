@@ -1,181 +1,74 @@
-// src/app/api/onboarding/complete/route.ts
 import { NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-
+import mongoose from 'mongoose'; // 👈 Importante importar mongoose
 import dbConnect from '@/app/lib/dbConnect';
-import { User } from '@/app/lib/models/User';
-import { Athlete } from '@/app/lib/models/Athlete'; // 👈 ajusta la ruta si es distinta
-
-interface AthletePayload {
-  username: string;
-  age: number | string;
-  weight: number | string;
-  height: number | string;
-  experience: string;
-  goal: string;
-  targetTime?: string;
-  strengths?: string[];
-  weaknesses?: string[];
-}
-
-interface OnboardingPayload {
-  userId: string;
-  category: 'individual' | 'doubles';
-  mode: 'same-device' | 'invite-partner';
-  doublesType?: 'men' | 'women' | 'mixed';
-  athlete1: AthletePayload;
-  athlete2?: AthletePayload | null;
-}
+import { Training } from '@/app/lib/models/Training';
+import { Athlete } from '@/app/lib/models/Athlete';
 
 export async function POST(request: Request) {
   try {
     await dbConnect();
-
-    const body = (await request.json()) as OnboardingPayload;
-    const { userId, category, mode, doublesType, athlete1, athlete2 } = body;
-
-    // --- Validaciones básicas ---
+    const body = await request.json();
+    
+    const { userId, training, athlete1, athlete2 } = body;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: 'userId es obligatorio.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return NextResponse.json(
-        { error: 'userId no es un ObjectId válido.' },
-        { status: 400 }
-      );
-    }
+    // --- PASO CLAVE: PRE-GENERAR EL ID DEL TRAINING ---
+    // Generamos un ObjectId válido manualmente aquí para poder 
+    // dárselo a los atletas antes de crear el documento de Training.
+    const generatedTrainingId = new mongoose.Types.ObjectId();
 
-    if (!category || !['individual', 'doubles'].includes(category)) {
-      return NextResponse.json(
-        { error: 'Categoría inválida.' },
-        { status: 400 }
-      );
-    }
-
-    if (!['same-device', 'invite-partner'].includes(mode)) {
-      return NextResponse.json(
-        { error: 'Modo inválido. Usa "same-device" o "invite-partner".' },
-        { status: 400 }
-      );
-    }
-
-    // Validar atleta1 (mínimo + campos required del schema)
-    if (
-      !athlete1?.username ||
-      !athlete1.age ||
-      !athlete1.weight ||
-      !athlete1.height
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            'Atleta 1 debe tener al menos nombre, edad, peso y altura.',
+    // --- PASO 1: GUARDAR ATLETA 1 ---
+    const newAthlete1 = await Athlete.findOneAndUpdate(
+      { userId: userId, username: athlete1.username },
+      { 
+        ...athlete1, 
+        userId, 
+        trainingId: generatedTrainingId // 👈 Ahora sí tenemos el ID
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+    
+    // --- PASO 2: GUARDAR ATLETA 2 (Opcional) ---
+    let newAthlete2 = null;
+    if (athlete2 && athlete2.username) {
+      newAthlete2 = await Athlete.findOneAndUpdate(
+        { userId: userId, username: athlete2.username },
+        { 
+          ...athlete2, 
+          userId,
+          trainingId: generatedTrainingId // 👈 También se lo pasamos aquí
         },
-        { status: 400 }
+        { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     }
 
-    if (!athlete1.experience || !athlete1.goal) {
-      return NextResponse.json(
-        {
-          error:
-            'Atleta 1 debe incluir experiencia y objetivo.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // Validar atleta2 solo si es dobles + same-device
-    if (category === 'doubles' && mode === 'same-device') {
-      if (
-        !athlete2 ||
-        !athlete2.username ||
-        !athlete2.age ||
-        !athlete2.weight ||
-        !athlete2.height
-      ) {
-        return NextResponse.json(
-          {
-            error:
-              'Atleta 2 debe tener al menos nombre, edad, peso y altura.',
-          },
-          { status: 400 }
-        );
-      }
-
-      if (!athlete2.experience || !athlete2.goal) {
-        return NextResponse.json(
-          {
-            error:
-              'Atleta 2 debe incluir experiencia y objetivo.',
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // --- Verificar que el usuario existe ---
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Usuario no encontrado.' },
-        { status: 404 }
-      );
-    }
-
-    // --- Crear Atleta 1 ---
-
-    await Athlete.create({
-      ...athlete1,
-      userId: user._id,
+    // --- PASO 3: CREAR TRAINING ---
+    const newTraining = await Training.create({
+      _id: generatedTrainingId, // 👈 Usamos el ID que generamos al principio
+      ownerUserId: userId,
+      
+      athlete1Id: newAthlete1._id,
+      athlete2Id: newAthlete2 ? newAthlete2._id : undefined,
+      
+      division: training.division, 
+      mode: training.mode,
+      gender: training.gender,
+      
+      status: 'active'
     });
 
-    // --- Crear Atleta 2 si aplica (dobles + same-device) ---
+    return NextResponse.json({
+      success: true,
+      trainingId: newTraining._id,
+      message: 'Setup completado'
+    }, { status: 201 });
 
-    if (category === 'doubles' && mode === 'same-device' && athlete2) {
-      await Athlete.create({
-        ...athlete2,
-        userId: user._id,
-      });
-    }
-
-    // --- Actualizar User con categoría / tipo / estado del dúo ---
-
-    user.category = category;
-
-    if (category === 'doubles') {
-      user.doublesType = doublesType || 'mixed';
-      user.duoStatus =
-        mode === 'same-device' ? 'complete' : 'pending_partner';
-    } else {
-      user.doublesType = undefined;
-      user.duoStatus = 'single';
-    }
-
-    await user.save();
-
-    return NextResponse.json(
-      { success: true, message: 'Onboarding completado.' },
-      { status: 200 }
-    );
   } catch (error: any) {
-    console.error('Onboarding complete error:', error);
-
-    if (error?.errors) {
-      Object.values(error.errors).forEach((err: any) =>
-        console.error('Validation:', err.message)
-      );
-    }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor al completar el onboarding.' },
-      { status: 500 }
-    );
+    console.error("Error en onboarding API:", error);
+    // Devolvemos el mensaje exacto del error para facilitar depuración
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

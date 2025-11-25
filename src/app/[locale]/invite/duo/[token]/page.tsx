@@ -4,8 +4,14 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { AthleteForm } from '@/app/components/register/AthleteForm';
+import { Step1AccountInfo } from '@/app/components/register/Step1AccountInfo';
+
+// src/app/invite/duo/[token]/page.tsx
+
+type AthleteGender = 'men' | 'women' | '';
 
 type Athlete = {
+  gender: AthleteGender;              // 👈 NUEVO
   username: string;
   age: string | number;
   weight: string | number;
@@ -18,6 +24,7 @@ type Athlete = {
 };
 
 const initialAthlete: Athlete = {
+  gender: '',                         // 👈 NUEVO
   username: '',
   age: '',
   weight: '',
@@ -29,6 +36,21 @@ const initialAthlete: Athlete = {
   weaknesses: [],
 };
 
+
+type AccountForm = {
+  email: string;
+  username: string;
+  password: string;
+  confirmPassword: string;
+};
+
+const initialAccount: AccountForm = {
+  email: '',
+  username: '',
+  password: '',
+  confirmPassword: '',
+};
+
 const DuoInvitePage: React.FC = () => {
   const params = useParams<{ token: string }>();
   const router = useRouter();
@@ -38,6 +60,13 @@ const DuoInvitePage: React.FC = () => {
   const [inviteError, setInviteError] = useState<string | null>(null);
   const [ownerUsername, setOwnerUsername] = useState<string>('Atleta');
   const [doublesType, setDoublesType] = useState<string | undefined>(undefined);
+
+  // Paso y estados del invitado
+  const [step, setStep] = useState<1 | 2>(1);
+  const [accountData, setAccountData] = useState<AccountForm>({
+    ...initialAccount,
+  });
+  const [createdUserId, setCreatedUserId] = useState<string | null>(null);
 
   const [athleteData, setAthleteData] = useState<Athlete>({ ...initialAthlete });
   const [submitting, setSubmitting] = useState(false);
@@ -74,15 +103,126 @@ const DuoInvitePage: React.FC = () => {
     }
   }, [token]);
 
-  const handleSubmit = async () => {
+  // --- Paso 1: cuenta del invitado ---
+
+  const handleAccountChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setAccountData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const validateAccountStep = (): boolean => {
+    const { email, username, password, confirmPassword } = accountData;
+
+    if (!email || !username || !password || !confirmPassword) {
+      setSubmitError(
+        'Por favor, completa email, nombre de usuario y ambas contraseñas.'
+      );
+      return false;
+    }
+
+    if (password !== confirmPassword) {
+      setSubmitError('Las contraseñas no coinciden.');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleCreateAccountAndNext = async () => {
     setSubmitError(null);
-    setSubmitting(true);
+
+    if (!validateAccountStep()) return;
 
     try {
+      setSubmitting(true);
+
+      // Reutilizamos el endpoint normal de registro
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: accountData.email,
+          username: accountData.username,
+          password: accountData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSubmitError(data?.error || 'No se pudo crear tu cuenta.');
+        return;
+      }
+
+      if (!data.userId) {
+        setSubmitError(
+          'La cuenta se creó pero no recibimos el ID del usuario.'
+        );
+        return;
+      }
+
+      setCreatedUserId(data.userId as string);
+
+      // Avanzamos al paso 2: completar perfil de atleta
+      setStep(2);
+    } catch (err: any) {
+      console.error(err);
+      setSubmitError(
+        err?.message ||
+          'Ocurrió un error al crear tu cuenta. Inténtalo de nuevo.'
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // --- Paso 2: perfil Atleta 2 ---
+
+  const validateAthleteStep = (): boolean => {
+    const a = athleteData;
+
+    if (!a.username || !a.age || !a.weight || !a.height) {
+      setSubmitError(
+        'Por favor, completa al menos nombre, edad, peso y altura.'
+      );
+      return false;
+    }
+
+    if (!a.experience || !a.goal) {
+      setSubmitError(
+        'Por favor, indica tu experiencia y tu objetivo para Hyrox.'
+      );
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleFinalSubmit = async () => {
+    setSubmitError(null);
+
+    if (!createdUserId) {
+      setSubmitError(
+        'No se encontró tu cuenta. Vuelve al paso anterior y crea tu cuenta primero.'
+      );
+      setStep(1);
+      return;
+    }
+
+    if (!validateAthleteStep()) return;
+
+    try {
+      setSubmitting(true);
+
       const res = await fetch(`/api/register/duo-invite/${token}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(athleteData),
+        body: JSON.stringify({
+          userId: createdUserId,
+          athlete: athleteData,
+        }),
       });
 
       const data = await res.json();
@@ -96,7 +236,7 @@ const DuoInvitePage: React.FC = () => {
 
       // Opcional: redirigir después de unos segundos
       setTimeout(() => {
-        router.push('/'); // o a una landing específica
+        router.push('/'); // o una landing específica
       }, 2500);
     } catch (err: any) {
       console.error(err);
@@ -107,6 +247,8 @@ const DuoInvitePage: React.FC = () => {
       setSubmitting(false);
     }
   };
+
+  // --- Render condicional ---
 
   if (loadingInvite) {
     return (
@@ -143,8 +285,7 @@ const DuoInvitePage: React.FC = () => {
             <span className="font-semibold">
               {doublesType ? `Dobles (${doublesType})` : 'Dobles'}
             </span>
-            . Completa tu perfil de atleta para uniros al plan de
-            entrenamiento.
+            . Primero crea tu cuenta y luego completa tu perfil de atleta.
           </p>
         </div>
 
@@ -155,32 +296,64 @@ const DuoInvitePage: React.FC = () => {
           </div>
         )}
 
-        {/* Errores de submit */}
+        {/* Errores */}
         {submitError && (
           <div className="p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-700 text-center">
             {submitError}
           </div>
         )}
 
-        {/* Formulario de Atleta 2 */}
-        <div className="space-y-6">
-          <AthleteForm
-            athleteData={athleteData}
-            setAthleteData={(data: Partial<Athlete>) =>
-              setAthleteData((prev) => ({ ...prev, ...data }))
-            }
-            athleteNumber={2}
-          />
+        {/* Paso 1: Cuenta */}
+        {step === 1 && (
+          <div className="space-y-6">
+            <Step1AccountInfo
+              formData={accountData}
+              handleChange={handleAccountChange}
+            />
 
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={submitting || success}
-            className="w-full flex justify-center items-center px-4 py-3 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all duration-300"
-          >
-            {submitting ? 'Enviando...' : 'Unirme al equipo'}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={handleCreateAccountAndNext}
+              disabled={submitting || success}
+              className="w-full flex justify-center items-center px-4 py-3 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all duration-300"
+            >
+              {submitting ? 'Creando cuenta...' : 'Continuar con mi cuenta'}
+            </button>
+          </div>
+        )}
+
+        {/* Paso 2: Perfil de Atleta 2 */}
+        {step === 2 && (
+          <div className="space-y-6">
+            <AthleteForm
+              athleteData={athleteData}
+              setAthleteData={(data: Partial<Athlete>) =>
+                setAthleteData((prev) => ({ ...prev, ...data }))
+              }
+              athleteNumber={2}
+            />
+
+            <div className="flex justify-between gap-4">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                disabled={submitting || success}
+                className="px-4 py-3 w-1/3 rounded-md border border-gray-300 text-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Volver
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                disabled={submitting || success}
+                className="flex-1 flex justify-center items-center px-4 py-3 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all duration-300"
+              >
+                {submitting ? 'Enviando...' : 'Unirme al equipo'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

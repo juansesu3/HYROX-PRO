@@ -1,17 +1,21 @@
-// src/app/[locale]/get-started/page.tsx
 'use client';
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
+// Componentes
 import Step2CategorySelection from '@/app/components/register/Step2CategorySelection';
 import { Step3AthleteProfile } from '@/app/components/register/Step3AthleteProfile';
 import { Step4ReviewAndSubmit } from '@/app/components/register/Step4ReviewAndSubmit';
 import StepIndicator from '@/app/components/register/StepIndicator';
-import { useSession } from 'next-auth/react';
 import { DuoInviteSummary } from '@/app/components/register/DuoInviteSummary';
 
+// Tipos
+type AthleteGender = 'men' | 'women' | '';
+
 type Athlete = {
+  gender: AthleteGender;
   username: string;
   age: string | number;
   weight: string | number;
@@ -23,16 +27,8 @@ type Athlete = {
   weaknesses?: string[];
 };
 
-export type OnboardingFormData = {
-  email: string;
-  category: 'individual' | 'doubles' | '';
-  mode: 'same-device' | 'invite-partner';
-  doublesType?: 'men' | 'women' | 'mixed' | '';
-  athlete1: Athlete;
-  athlete2: Athlete;
-};
-
 const initialAthlete: Athlete = {
+  gender: '',
   username: '',
   age: '',
   weight: '',
@@ -44,90 +40,92 @@ const initialAthlete: Athlete = {
   weaknesses: [],
 };
 
+type TrainingSelection = {
+  division: 'individual' | 'doubles';
+  gender: 'men' | 'women';
+  mode: 'same-device' | 'invite-partner';
+};
+
+export type OnboardingFormData = {
+  email: string;
+  training: TrainingSelection;
+  athlete1: Athlete;
+  athlete2: Athlete;
+};
+
 const GetStartedPage: React.FC = () => {
   const router = useRouter();
   const { data: session } = useSession();
-
-  // id del usuario desde next-auth
   const userId = (session?.user as any)?.id as string | undefined;
 
+  // --- Estados ---
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState<OnboardingFormData>({
-    email: (session?.user?.email as string) || '',
-    category: '',
-    mode: 'same-device',
-    doublesType: '',
-    athlete1: { ...initialAthlete },
-    athlete2: { ...initialAthlete },
-  });
-
-  // Estado para la pantalla de invitación (dobles + invite-partner)
+  // Estado para controlar la vista de invitación
   const [inviteData, setInviteData] = useState<{
     inviteUrl: string;
     expiresAt: string;
   } | null>(null);
   const [showInviteSummary, setShowInviteSummary] = useState(false);
 
-  // --- Validaciones ---
+  const [formData, setFormData] = useState<OnboardingFormData>({
+    email: (session?.user?.email as string) || '',
+    training: {
+      division: 'individual',
+      gender: 'men',
+      mode: 'same-device',
+    },
+    athlete1: { ...initialAthlete },
+    athlete2: { ...initialAthlete },
+  });
 
+  // --- Validaciones ---
   const validateStep1 = (): boolean => {
-    if (!formData.category) {
-      setError('Por favor, elige una categoría (Individual o Dobles).');
+    const { training } = formData;
+    if (!training.division) {
+      setError('Por favor, elige si competirás en Individual o Dobles.');
       return false;
     }
-
-    if (formData.category === 'doubles' && !formData.mode) {
+    if (!training.gender) {
+      setError('Por favor, elige si competirás en categoría Hombre o Mujer.');
+      return false;
+    }
+    if (training.division === 'doubles' && !training.mode) {
       setError('Por favor, elige cómo quieres registrar a tu compañero.');
       return false;
     }
-
     setError(null);
     return true;
   };
 
   const validateStep2 = (): boolean => {
-    const a1 = formData.athlete1;
-
-    if (!a1.username || !a1.age || !a1.weight || !a1.height) {
-      setError(
-        'Por favor, completa al menos nombre, edad, peso y altura del Atleta 1.'
-      );
+    const { training, athlete1, athlete2 } = formData;
+    if (!athlete1.username || !athlete1.age || !athlete1.weight || !athlete1.height) {
+      setError('Por favor, completa los datos básicos del Atleta 1.');
       return false;
     }
-
-    if (formData.category === 'doubles' && formData.mode === 'same-device') {
-      const a2 = formData.athlete2;
-      if (!a2.username || !a2.age || !a2.weight || !a2.height) {
-        setError(
-          'Has elegido Dobles (mismo dispositivo). Completa también los datos básicos del Atleta 2.'
-        );
+    if (training.division === 'doubles' && training.mode === 'same-device') {
+      if (!athlete2.username || !athlete2.age || !athlete2.weight || !athlete2.height) {
+        setError('Para Dobles (mismo dispositivo), completa los datos del Atleta 2.');
         return false;
       }
     }
-
     setError(null);
     return true;
   };
 
-  // --- Helpers de actualización ---
-
+  // --- Helpers ---
   const setAthleteData = (
     athleteKey: 'athlete1' | 'athlete2',
     updatedData: Partial<Athlete>
   ) => {
     setFormData((prev) => ({
       ...prev,
-      [athleteKey]: {
-        ...prev[athleteKey],
-        ...updatedData,
-      },
+      [athleteKey]: { ...prev[athleteKey], ...updatedData },
     }));
   };
-
-  // --- Navegación entre pasos ---
 
   const handleNext = () => {
     if (currentStep === 1) {
@@ -145,32 +143,28 @@ const GetStartedPage: React.FC = () => {
     setCurrentStep((prev) => (prev === 1 ? 1 : (prev - 1) as 1 | 2 | 3));
   };
 
-  // --- Submit global del onboarding ---
-
+  // --- LÓGICA PRINCIPAL: Handle Submit ---
   const handleSubmit = async () => {
     setError(null);
     setIsSubmitting(true);
 
     try {
-      if (!userId) {
-        setError('No se encontró el usuario en la sesión.');
-        return;
-      }
+      if (!userId) throw new Error('No se encontró el usuario en la sesión.');
 
-      // 1) Llamar a la API de onboarding (crear atletas + actualizar user)
+      const { training, athlete1, athlete2 } = formData;
+
+      // 1. Crear Onboarding (Training + Atleta 1)
       const payload = {
         userId,
-        category: formData.category === '' ? 'individual' : formData.category,
-        mode: formData.mode,
-        doublesType:
-          formData.category === 'doubles'
-            ? formData.doublesType || 'mixed'
-            : undefined,
-        athlete1: formData.athlete1,
+        training: {
+          division: training.division,
+          gender: training.gender,
+          mode: training.mode,
+        },
+        athlete1,
         athlete2:
-          formData.category === 'doubles' &&
-          formData.mode === 'same-device'
-            ? formData.athlete2
+          training.division === 'doubles' && training.mode === 'same-device'
+            ? athlete2
             : null,
       };
 
@@ -183,137 +177,115 @@ const GetStartedPage: React.FC = () => {
       const onboardingData = await resOnboarding.json();
 
       if (!resOnboarding.ok) {
-        setError(
-          onboardingData?.error || 'No se pudo completar el registro.'
-        );
-        return;
+        throw new Error(onboardingData?.error || 'Error al completar registro.');
       }
 
-      // 2) Si es dobles + invite-partner → generar invitación y mostrar pantalla de compartir
-      if (
-        formData.category === 'doubles' &&
-        formData.mode === 'invite-partner'
-      ) {
+      const trainingId = onboardingData.trainingId;
+
+      // 2. Lógica Condicional: ¿Es Dobles con Invitación?
+      if (training.division === 'doubles' && training.mode === 'invite-partner') {
+        
+        if (!trainingId) throw new Error('Falta ID de entrenamiento.');
+
+        // Generar el link de invitación
         const resInvite = await fetch('/api/register/duo-invite', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            category: 'doubles',
-            doublesType: formData.doublesType || 'mixed',
-          }),
+          body: JSON.stringify({ trainingId }),
         });
 
         const inviteJson = await resInvite.json();
 
         if (!resInvite.ok) {
-          setError(
-            inviteJson?.error ||
-              'Se completó tu perfil, pero no se pudo generar el enlace de invitación.'
-          );
-          return;
+          throw new Error(inviteJson?.error || 'Error al generar invitación.');
         }
 
+        // ✅ ÉXITO: Guardamos datos y mostramos pantalla de invitación
         setInviteData({
           inviteUrl: inviteJson.inviteUrl,
-          expiresAt: inviteJson.expiresAt, // 👈 devuelto desde el backend
+          expiresAt: inviteJson.expiresAt,
         });
-        setShowInviteSummary(true);
-        return;
+        setShowInviteSummary(true); // Esto cambia el renderizado
+        setIsSubmitting(false);     // Quitamos el loading
+        return;                     // 🛑 DETENEMOS AQUÍ para no redirigir
       }
 
-      // 3) Caso normal: individual o dobles + same-device
-      alert(
-        '🎉 ¡Setup completado! Ya puedes empezar con tu plan de entrenamiento.'
-      );
-      router.push('/');
+      // 3. Caso Normal (Individual o Dobles mismo dispositivo)
+      alert('🎉 ¡Setup completado!');
+      router.push('/'); // Redirigir al dashboard
+      
     } catch (err: any) {
       console.error('Onboarding error:', err);
-      setError(
-        err?.message ||
-          'Ocurrió un error al completar el registro. Inténtalo de nuevo.'
-      );
-    } finally {
+      setError(err?.message || 'Ocurrió un error inesperado.');
       setIsSubmitting(false);
     }
   };
 
-  // --- Render del contenido por paso ---
-
+  // --- Render del Formulario (Pasos 1, 2, 3) ---
   const renderStep = () => {
     if (currentStep === 1) {
-      return (
-        <Step2CategorySelection
-          formData={formData}
-          setFormData={setFormData}
-        />
-      );
+      return <Step2CategorySelection formData={formData} setFormData={setFormData} />;
     }
-
     if (currentStep === 2) {
-      return (
-        <Step3AthleteProfile
-          formData={formData}
-          setAthleteData={setAthleteData}
-        />
-      );
+      return <Step3AthleteProfile formData={formData} setAthleteData={setAthleteData} />;
     }
-
     return (
       <Step4ReviewAndSubmit
         formData={formData}
         isLoading={isSubmitting}
+        handleSubmit={handleSubmit}
       />
     );
   };
 
-  // --- UI ---
-
+  // --- UI Principal ---
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center px-1 py-10">
       <div className="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-6 md:p-8 space-y-8">
-        {/* Mensaje de bienvenida */}
+        
+        {/* Título Dinámico */}
         <div className="space-y-2 text-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            ¡Bienvenido a tu setup inicial de entrenamiento! 💪
+            {showInviteSummary ? '¡Casi listos! Invita a tu compañero 🤝' : '¡Bienvenido a tu setup inicial! 💪'}
           </h1>
           <p className="text-gray-600 max-w-xl mx-auto">
-            En unos pocos pasos configuraremos tu categoría y tu perfil de
-            atleta para que puedas empezar a entrenar con un plan adaptado a ti.
+            {showInviteSummary 
+              ? 'Comparte este enlace con tu compañero para que complete su perfil y puedan empezar.'
+              : 'Configura tu categoría y perfil para empezar a entrenar.'}
           </p>
         </div>
 
-        {/* Si estamos en la pantalla de invitación, mostramos solo eso */}
+        {/* --- RENDERIZADO CONDICIONAL --- */}
         {showInviteSummary && inviteData ? (
+          // Opción A: Mostrar Resumen de Invitación
           <DuoInviteSummary
             inviteUrl={inviteData.inviteUrl}
             expiresAt={inviteData.expiresAt}
             onContinue={() => {
+              // El usuario decide cuándo ir al dashboard tras copiar el link
               router.push('/');
             }}
           />
         ) : (
+          // Opción B: Mostrar Wizard de Registro
           <>
-            {/* StepIndicator global (Cuenta ya completada, seguimos desde paso 2) */}
             <StepIndicator currentStep={currentStep + 1} />
 
-            {/* Error */}
             {error && (
-              <p className="text-sm text-red-600 text-center bg-red-50 p-3 rounded-md">
+              <div className="text-sm text-red-600 text-center bg-red-50 p-3 rounded-md border border-red-100">
                 {error}
-              </p>
+              </div>
             )}
 
-            {/* Contenido del paso */}
             {renderStep()}
 
-            {/* Navegación de pasos */}
-            <div className="flex justify-between pt-4">
+            {/* Botones de Navegación */}
+            <div className="flex justify-between pt-4 border-t border-gray-100">
               <button
                 type="button"
                 onClick={handlePrev}
                 disabled={currentStep === 1 || isSubmitting}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 rounded-md border border-gray-300 text-gray-700 text-sm font-medium disabled:opacity-50 hover:bg-gray-50 transition-colors"
               >
                 Anterior
               </button>
@@ -323,7 +295,7 @@ const GetStartedPage: React.FC = () => {
                   type="button"
                   onClick={handleNext}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors shadow-sm"
                 >
                   Siguiente
                 </button>
@@ -332,9 +304,15 @@ const GetStartedPage: React.FC = () => {
                   type="button"
                   onClick={handleSubmit}
                   disabled={isSubmitting}
-                  className="px-4 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-6 py-2 rounded-md bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition-colors shadow-sm flex items-center gap-2"
                 >
-                  {isSubmitting ? 'Guardando...' : 'Comenzar a entrenar'}
+                  {isSubmitting && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {isSubmitting ? 'Guardando...' : 'Finalizar Registro'}
                 </button>
               )}
             </div>
