@@ -13,7 +13,7 @@ interface Step4ReviewAndSubmitProps {
     isLoading: boolean;
 }
 
-export const Step4ReviewAndSubmit = ({ formData, isLoading }: Step4ReviewAndSubmitProps) => (
+export const Step4ReviewAndSubmit = ({ formData, isLoading, handleSubmit }: Step4ReviewAndSubmitProps) => (
     <div className="space-y-6 animate-fade-in">
         <h2 className="text-2xl font-semibold text-gray-800 text-center">Revisar y Finalizar</h2>
         <div className="p-6 bg-gray-50 rounded-lg space-y-4">
@@ -32,7 +32,7 @@ export const Step4ReviewAndSubmit = ({ formData, isLoading }: Step4ReviewAndSubm
         </div>
 
 
-        <button type="submit" disabled={isLoading} className="w-full flex justify-center items-center px-4 py-3 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all duration-300 mt-6">
+        <button type="submit" disabled={isLoading} onClick={handleSubmit} className="w-full flex justify-center items-center px-4 py-3 font-bold text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 transition-all duration-300 mt-6">
             {isLoading ? 'Registrando...' : 'Finalizar Registro'}
         </button>
     </div>

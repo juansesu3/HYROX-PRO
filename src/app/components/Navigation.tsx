@@ -5,11 +5,26 @@ import { usePathname } from 'next/navigation';
 import { GoHome } from "react-icons/go";
 import { CiUser, CiSettings, CiChat2 } from "react-icons/ci";
 
+// ❤️ Locales soportados (mismo array que en proxy)
+const locales = ['en', 'es', 'fr'];
+
 export default function Navigation() {
   const pathname = usePathname();
 
-  // Ocultar en login o register
-  if (pathname === '/login' || pathname === '/register') {
+  // Detectar locale si existe
+  const segments = pathname.split('/').filter(Boolean);
+  const maybeLocale = segments[0];
+  const hasLocale = locales.includes(maybeLocale);
+
+  // Normalizar ruta sin locale
+  const normalizedPath = hasLocale
+    ? '/' + segments.slice(1).join('/')
+    : pathname;
+
+  // Ocultar en login, register y get-started
+  const hiddenRoutes = ['/login', '/register', '/get-started','/invite'];
+
+  if (hiddenRoutes.includes(normalizedPath)) {
     return null;
   }
 
@@ -34,7 +49,7 @@ type NavItemProps = {
 
 function NavItem({ href, pathname, icon, label }: NavItemProps) {
   const isActive = href === '/'
-    ? pathname === '/'
+    ? pathname === '/' || pathname.startsWith(`/${href}`)
     : pathname.startsWith(href);
 
   return (

@@ -1,76 +1,101 @@
+// src/app/lib/auth/auth-options.ts
 import type { AuthOptions } from 'next-auth';
-
 import CredentialsProvider from 'next-auth/providers/credentials';
 import dbConnect from '@/app/lib/dbConnect';
-import { User } from '@/app/lib/models';
+import { User } from '@/app/lib/models/User';
 import bcrypt from 'bcryptjs';
-import { JWT } from 'next-auth/jwt';
+import type { JWT } from 'next-auth/jwt';
 
 interface MyJWT extends JWT {
   id?: string;
   username?: string;
+  email?: string;
+  category?: 'individual' | 'doubles';
 }
-const authOptions: AuthOptions = {
+
+export const authOptions: AuthOptions = {
   providers: [
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: "Email", type: "text" },
-        password: { label: "Password", type: "password" }
+        identifier: {
+          label: 'Email o nombre de usuario',
+          type: 'text',
+        },
+        password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
         try {
           await dbConnect();
           if (!credentials) return null;
 
-          const user = await User.findOne({ email: credentials.email }).select('+password');
-          if (!user) return null;
+          const { identifier, password } = credentials;
+          if (!identifier || !password) return null;
 
-          const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
+          const normalizedIdentifier = identifier.toLowerCase().trim();
+
+          const user = await User.findOne({
+            $or: [
+              { email: normalizedIdentifier },
+              { username: normalizedIdentifier },
+            ],
+          }).select('+password');
+
+          if (!user || !user.password) return null;
+
+          const isPasswordCorrect = await bcrypt.compare(
+            password,
+            user.password
+          );
           if (!isPasswordCorrect) return null;
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { password, _id, ...rest } = user.toObject();
+
+          const { password: _, _id, ...rest } = user.toObject();
 
           return {
-            id: _id.toString(), // 👈 requerido por NextAuth
+            id: _id.toString(),
             ...rest,
           };
         } catch (error) {
-          console.error("Error en authorize:", error);
+          console.error('Error en authorize:', error);
           return null;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
   },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
-    signIn: '/login',
+    signIn: '/get-started',
   },
   callbacks: {
     async jwt({ token, user }) {
       const myToken = token as MyJWT;
+
       if (user) {
-        myToken.id = user.id;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        myToken.id = (user as any).id;
         myToken.username = (user as any).username;
+        myToken.email = (user as any).email;
+        myToken.category = (user as any).category;
       }
+
       return myToken;
     },
     async session({ session, token }) {
       const myToken = token as MyJWT;
+
       if (myToken) {
         session.user = {
           ...session.user,
           id: myToken.id,
           username: myToken.username,
-        };
+          email: myToken.email,
+          category: myToken.category,
+        } as any;
       }
-      return session;
-    }
-  }
-};
 
-export default authOptions;
+      return session;
+    },
+  },
+};

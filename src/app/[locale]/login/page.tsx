@@ -4,10 +4,10 @@ import React, { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image'; // 👈 para usar next/image
+import Image from 'next/image';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // 👈 antes era email
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export default function LoginPage() {
     try {
       const result = await signIn('credentials', {
         redirect: false,
-        email,
+        identifier, // 👈 clave: coincide con authOptions.credentials.identifier
         password,
       });
 
@@ -42,7 +42,6 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-gray-900 text-white p-4">
       <div className="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-2xl shadow-lg border border-gray-700">
         <div className="flex flex-col items-center">
-          {/* ✅ Logo */}
           <Image
             src="https://my-page-negiupp.s3.amazonaws.com/1751269149537.png"
             alt="AIroxPro Logo"
@@ -50,13 +49,6 @@ export default function LoginPage() {
             height={200}
             className="mb-4 h-24 w-24"
           />
-
-          {/* ✅ Nombre app con colores */}
-          {/* <h1 className="text-4xl font-extrabold uppercase tracking-wider text-center">
-            <span className="text-white">AI</span>
-            <span style={{ color: '#97ff07' }}>rox</span>
-            <span className="text-white">Pro</span>
-          </h1> */}
           <p className="mt-2 text-center text-gray-400">
             El esfuerzo compartido es doble victoria.
           </p>
@@ -64,17 +56,22 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-400">Email</label>
+            <label className="block text-sm font-medium text-gray-400">
+              Email o nombre de usuario
+            </label>
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              type="text"
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
               required
               className="w-full px-4 py-3 mt-1 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="tu-email@ejemplo.com o tu-username"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-400">Contraseña</label>
+            <label className="block text-sm font-medium text-gray-400">
+              Contraseña
+            </label>
             <input
               type="password"
               value={password}
@@ -85,7 +82,9 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="text-sm text-red-500 text-center animate-pulse">{error}</p>
+            <p className="text-sm text-red-500 text-center animate-pulse">
+              {error}
+            </p>
           )}
 
           <button
