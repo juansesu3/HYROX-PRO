@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import dbConnect from '@/app/lib/dbConnect';
 import { DuoInvite } from '@/app/lib/models/DuoInvite';
@@ -6,15 +6,16 @@ import { User } from '@/app/lib/models/User';
 import { Athlete } from '@/app/lib/models/Athlete';
 import { Training } from '@/app/lib/models/Training';
 
+type Params = { token: string };
+
 // GET: validar invitación y mostrar info básica
 export async function GET(
-  request: Request,
-  { params }: { params: { token: string } }
+  request: NextRequest,
+  { params }: { params: Promise<Params> }
 ) {
   try {
     await dbConnect();
 
-    // En Next.js 15 params puede ser una promesa, el await es seguro
     const { token } = await params;
 
     const invite = await DuoInvite.findOne({ token });
@@ -64,8 +65,8 @@ export async function GET(
 
 // POST: aceptar invitación y guardar perfil del Atleta 2
 export async function POST(
-  request: Request,
-  { params }: { params: { token: string } }
+  request: NextRequest,
+  { params }: { params: Promise<Params> }
 ) {
   try {
     await dbConnect();

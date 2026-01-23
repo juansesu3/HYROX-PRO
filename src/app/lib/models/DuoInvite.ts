@@ -1,8 +1,12 @@
 // src/app/lib/models/DuoInvite.ts
-import mongoose, { Schema, Document, Model } from 'mongoose';
+import mongoose, { Schema, Document, Model, Types } from 'mongoose';
 
 export interface IDuoInvite extends Document {
-  trainingId: mongoose.Types.ObjectId; // 👈 en vez de userId
+  // 👈 en vez de userId
+  userId: Types.ObjectId;
+  trainingId: Types.ObjectId;
+  partnerUserId?: Types.ObjectId;
+  doublesType?: string;
   token: string;
   status: 'pending' | 'accepted' | 'expired';
   expiresAt: Date;

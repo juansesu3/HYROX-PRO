@@ -13,3 +13,6 @@ export type TrainingBlock = {
   blockNumber: number;
   weeks: WeekPlan[];
 };
+
+// ✅ Esto es lo que te falta (para tu estructura 1..4: Session[])
+export type WeekData = Record<number, Session[]>;

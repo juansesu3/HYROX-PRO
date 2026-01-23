@@ -11,6 +11,7 @@ import React from 'react';
 interface Step4ReviewAndSubmitProps {
     formData: any; // Replace with FormData
     isLoading: boolean;
+    handleSubmit: () => void; // Add the handleSubmit property
 }
 
 export const Step4ReviewAndSubmit = ({ formData, isLoading, handleSubmit }: Step4ReviewAndSubmitProps) => (

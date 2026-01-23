@@ -52,7 +52,7 @@ export const authOptions: AuthOptions = {
           const { password: _, _id, ...rest } = user.toObject();
 
           return {
-            id: _id.toString(),
+            id: String(_id),
             ...rest,
           };
         } catch (error) {

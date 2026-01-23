@@ -12,6 +12,7 @@ export interface Trainer {
   // Datos para la IA
   aiPromptStyle: string; 
   focusArea: string;
+  methodology?: string; // Descripción del método de entrenamiento
 }
 
 export const trainers: Trainer[] = [

@@ -1,4 +1,3 @@
-import React from "react";
 import { Trainer } from "@/app/lib/coaches/coaches";
 
 interface TrainerInfoProps {

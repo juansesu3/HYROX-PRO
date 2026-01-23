@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         message: 'Registro completado.',
-        userId: newUser._id.toString(),
+        userId: String(newUser._id),
       },
       { status: 201 }
     );
