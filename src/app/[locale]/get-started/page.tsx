@@ -237,7 +237,7 @@ const GetStartedPage: React.FC = () => {
       />
     );
   };
-
+   
   // --- UI Principal ---
   return (
     <div className="min-h-screen bg-gray-50 flex justify-center px-1 py-10">
