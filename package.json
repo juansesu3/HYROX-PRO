@@ -16,7 +16,7 @@
     "chart.js": "^4.5.0",
     "framer-motion": "^12.23.0",
     "mongoose": "^8.16.0",
-    "next": "^16.0.3",
+    "next": "16.0.10",
     "next-auth": "^4.24.11",
     "next-intl": "^4.5.5",
     "openai": "^5.7.0",
