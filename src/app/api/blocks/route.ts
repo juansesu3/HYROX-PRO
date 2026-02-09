@@ -1,51 +1,92 @@
 // app/api/blocks/route.ts
-import { NextResponse } from 'next/server';
-import dbConnect from '@/app/lib/dbConnect';
-import { TrainingBlock } from '@/app/lib/models';
+import { NextResponse } from "next/server";
+import dbConnect from "@/app/lib/dbConnect";
+import { TrainingBlock } from "@/app/lib/models";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/app/lib/auth/auth-options";
+import mongoose from "mongoose";
+
+export const dynamic = "force-dynamic"; // evita caching raro en rutas con sesión
+
+async function requireUserId() {
+  const session = await getServerSession(authOptions);
+
+  const userId = session?.user?.id;
+  if (!userId) return null;
+
+  // Mongoose castea strings, pero lo dejamos explícito:
+  return new mongoose.Types.ObjectId(userId);
+}
 
 export async function GET() {
   try {
+    const userObjectId = await requireUserId();
+    if (!userObjectId) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
+    }
+
     await dbConnect();
 
-    // Busca todos los bloques de entrenamiento y los ordena por su número
-    const blocks = await TrainingBlock.find({}).sort({ blockNumber: 'asc' });
+    const blocks = await TrainingBlock.find({ userId: userObjectId })
+      .sort({ blockNumber: 1 })
+      .lean();
 
     return NextResponse.json(blocks);
   } catch (error) {
-    console.error('Error al obtener los bloques:', error);
-    return NextResponse.json({ message: 'Error al obtener los bloques de entrenamiento' }, { status: 500 });
+    console.error("Error al obtener los bloques:", error);
+    return NextResponse.json(
+      { message: "Error al obtener los bloques de entrenamiento" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(request: Request) {
-    try {
-      await dbConnect();
-  
-      // 1. Obtiene el cuerpo de la petición, que debería ser un array de bloques.
-      const blocksToInsert = await request.json();
-  
-      // 2. Validación básica: Asegurarse de que se ha enviado un array.
-      if (!Array.isArray(blocksToInsert) || blocksToInsert.length === 0) {
-        return NextResponse.json({ message: 'El cuerpo de la petición debe ser un array de bloques no vacío.' }, { status: 400 });
-      }
-  
-      // 3. Limpiar la colección existente para evitar duplicados.
-      // ¡PRECAUCIÓN! Esto elimina todos los bloques existentes. 
-      // Comenta o elimina esta línea si prefieres añadir bloques sin borrar los anteriores.
-      console.log('Limpiando la colección TrainingBlock antes de insertar...');
-      await TrainingBlock.deleteMany({});
-      
-      // 4. Insertar la colección de bloques en la base de datos.
-      // `insertMany` es eficiente para insertar múltiples documentos a la vez.
-      console.log(`Insertando ${blocksToInsert.length} bloque(s)...`);
-      const newBlocks = await TrainingBlock.insertMany(blocksToInsert);
-  
-      // 5. Devolver una respuesta de éxito con los datos insertados.
-      return NextResponse.json({ message: 'Bloques insertados con éxito', data: newBlocks }, { status: 201 });
-  
-    } catch (error) {
-      console.error('Error al insertar los bloques:', error);
-      return NextResponse.json({ message: 'Error al insertar los bloques de entrenamiento' }, { status: 500 });
+  try {
+    // ✅ 0) Usuario logueado
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      return NextResponse.json({ message: "No autorizado" }, { status: 401 });
     }
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // ✅ 1) Conectar DB
+    await dbConnect();
+
+    // ✅ 2) Body (array)
+    const blocksToInsert = await request.json();
+
+    if (!Array.isArray(blocksToInsert) || blocksToInsert.length === 0) {
+      return NextResponse.json(
+        { message: "El cuerpo debe ser un array de bloques no vacío." },
+        { status: 400 }
+      );
+    }
+
+    // ✅ 3) BORRAR SOLO los bloques de este usuario
+    await TrainingBlock.deleteMany({ userId: userObjectId });
+
+    // ✅ 4) FORZAR userId desde la sesión (no confiar en el body)
+    const docs = blocksToInsert.map((b: any) => {
+      const { userId: _ignoreUserId, _id, ...rest } = b; // ignorar userId/_id del cliente
+      return { ...rest, userId: userObjectId };
+    });
+
+    // ✅ 5) Insertar
+    const newBlocks = await TrainingBlock.insertMany(docs);
+
+    return NextResponse.json(
+      { message: "Bloques guardados con éxito", data: newBlocks },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Error al insertar los bloques:", error);
+    return NextResponse.json(
+      { message: "Error al insertar los bloques de entrenamiento" },
+      { status: 500 }
+    );
   }
-  
+}
