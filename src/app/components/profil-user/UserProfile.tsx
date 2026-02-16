@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
-import {  signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 
 type ProfilePayload = {
     user: any;
@@ -188,20 +188,20 @@ export default function UserProfile() {
                 </div>
 
                 <div className="flex gap-2">
-  <button
-    onClick={() => load()}
-    className="rounded-xl border border-gray-50 bg-white px-4 py-2 text-sm text-slate-900 hover:bg-slate-50 shadow-sm"
-  >
-    Actualizar
-  </button>
+                    <button
+                        onClick={() => load()}
+                        className="rounded-xl border border-gray-50 bg-white px-4 py-2 text-sm text-slate-900 hover:bg-slate-50 shadow-sm"
+                    >
+                        Actualizar
+                    </button>
 
-  <button
-    onClick={() => signOut({ callbackUrl: "/" })}
-    className="rounded-xl border border-gray-50 bg-white px-4 py-2 text-sm text-slate-900 hover:bg-slate-50 shadow-sm"
-  >
-    Cerrar sesión
-  </button>
-</div>
+                    <button
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="rounded-xl border border-gray-50 bg-white px-4 py-2 text-sm text-slate-900 hover:bg-slate-50 shadow-sm"
+                    >
+                        Cerrar sesión
+                    </button>
+                </div>
             </div>
 
             {/* Stats */}
@@ -327,8 +327,8 @@ export default function UserProfile() {
                                                                             toggleSession(b.blockNumber, weekIndex, sessionIndex, !completed)
                                                                         }
                                                                         className={`rounded-lg px-3 py-1.5 text-xs border shadow-sm transition ${completed
-                                                                                ? "border-gray-50 bg-slate-900 text-white hover:bg-slate-800"
-                                                                                : "border-gray-50 bg-white text-slate-900 hover:bg-slate-100"
+                                                                            ? "border-gray-50 bg-slate-900 text-white hover:bg-slate-800"
+                                                                            : "border-gray-50 bg-white text-slate-900 hover:bg-slate-100"
                                                                             }`}
                                                                     >
                                                                         {isBusy ? "..." : completed ? "✅ Completada" : "Marcar"}
@@ -502,8 +502,8 @@ function TabButton({ active, onClick, children }: any) {
         <button
             onClick={onClick}
             className={`rounded-xl border px-4 py-2 text-sm shadow-sm transition ${active
-                    ? "border-gray-50 bg-blue-600 text-white"
-                    : "border-gray-50 bg-white text-slate-700 hover:bg-slate-50"
+                ? "border-gray-50 bg-blue-600 text-white"
+                : "border-gray-50 bg-white text-slate-700 hover:bg-slate-50"
                 }`}
         >
             {children}

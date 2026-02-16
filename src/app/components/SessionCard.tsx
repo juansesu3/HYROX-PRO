@@ -92,6 +92,11 @@ export default function SessionCard({
           weekIndex,
           sessionIndex,
           comment,
+        
+          // ✅ contexto para el tip
+          sessionTitle: session.title,
+          sessionFocus: session.focus,
+          sessionDetails: session.details, // viene con HTML, en backend lo limpiamos
         }),
       });
 
