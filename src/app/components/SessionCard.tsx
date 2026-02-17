@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Session } from '../lib/definitions';
 import Swal from 'sweetalert2';
-import { FcIdea } from "react-icons/fc";
+import { FcIdea } from 'react-icons/fc';
+import { FiCheckCircle, FiMessageSquare } from 'react-icons/fi';
+
 interface SessionCardProps {
   session: Session;
   blockNumber: number;
@@ -68,9 +70,7 @@ export default function SessionCard({
           const data = await response.json();
           if (data && data.completed) {
             setIsCompleted(true);
-            if (data.completedAt) {
-              setCompletedAt(new Date(data.completedAt));
-            }
+            if (data.completedAt) setCompletedAt(new Date(data.completedAt));
           }
         }
       } catch (error) {
@@ -99,14 +99,13 @@ export default function SessionCard({
           // ✅ contexto para el tip
           sessionTitle: session.title,
           sessionFocus: session.focus,
-          sessionDetails: session.details, // viene con HTML, en backend lo limpiamos
+          sessionDetails: session.details,
         }),
       });
 
       if (response.ok) {
         setComment('');
         setStatus('¡Guardado!');
-        // Agregar el nuevo comentario a la lista
         const data = await response.json();
         setComments((prev) => [
           { comment: data.data.comment, coachTip: data.data.coachTip },
@@ -144,9 +143,7 @@ export default function SessionCard({
       focusCancel: true,
     });
 
-    if (!result.isConfirmed) {
-      return; // Cancelado
-    }
+    if (!result.isConfirmed) return;
 
     setIsLoadingCompleted(true);
 
@@ -166,9 +163,7 @@ export default function SessionCard({
         const result = await response.json();
         setIsCompleted(true);
         setStatus('¡Entreno completado!');
-        if (result?.status?.completedAt) {
-          setCompletedAt(new Date(result.status.completedAt));
-        }
+        if (result?.status?.completedAt) setCompletedAt(new Date(result.status.completedAt));
 
         await Swal.fire({
           title: '¡Listo!',
@@ -192,103 +187,204 @@ export default function SessionCard({
   };
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-md flex flex-col ">
-      <h3 className="text-xl font-bold mb-3">{session.title}</h3>
-      <p className="text-sm text-gray-500 mb-4">{session.focus}</p>
-      <ul
-        className="space-y-2 list-disc list-inside mb-4"
-        dangerouslySetInnerHTML={{ __html: session.details }}
-      />
+    <div
+      className="
+        relative overflow-hidden rounded-2xl border shadow-sm flex flex-col
+        bg-white border-slate-200
+        dark:bg-slate-900 dark:border-slate-800
+      "
+    >
+      {/* sporty glow */}
+      <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-blue-500/10 blur-3xl dark:bg-blue-500/20" />
+      <div className="pointer-events-none absolute -bottom-20 -left-16 h-48 w-48 rounded-full bg-emerald-400/10 blur-3xl dark:bg-emerald-400/20" />
 
-      <div className="mt-auto pt-4 border-t border-gray-200">
-        {/* ✅ Botón completar sesión */}
-        <div className="mb-4">
-          {isCompleted ? (
-            <div className="text-green-600 font-semibold text-sm">
-              ✅ Entreno completado
-              {completedAt && (
-                <p className="text-gray-600 font-normal mt-1">
-                  Completado el:{' '}
-                  {completedAt.toLocaleString('es-ES', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={handleCompleteSession}
-              disabled={isLoadingCompleted}
-              className="bg-green-600 text-white text-sm font-bold py-1 px-3 rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
+      <div className="relative p-6 flex flex-col h-full">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-xl font-black text-slate-900 dark:text-slate-100 mb-1 line-clamp-2">
+              {session.title}
+            </h3>
+            <p className="text-sm text-slate-600 dark:text-slate-400">
+              {session.focus}
+            </p>
+          </div>
+
+          {isCompleted && (
+            <span
+              className="
+                inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-black
+                bg-emerald-50 text-emerald-700 border border-emerald-100
+                dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900/50
+              "
             >
-              {isLoadingCompleted ? 'Guardando...' : 'Marcar como completado'}
-            </button>
+              <FiCheckCircle className="h-4 w-4" />
+              Done
+            </span>
           )}
         </div>
 
-        {/* Toggle comentarios */}
-        <button
-          onClick={() => setShowCommentArea(!showCommentArea)}
-          className="text-blue-600 hover:text-blue-800 font-semibold text-sm mb-2 w-full text-left"
-        >
-          {showCommentArea ? 'Ocultar Comentarios' : 'Ver/Añadir Comentarios'}
-        </button>
+        {/* Details HTML */}
+        <div
+          className="
+            mt-4 text-sm
+            text-slate-700 dark:text-slate-200
+            [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2
+            [&_li]:leading-relaxed
+            [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100
+            [&_em]:text-slate-600 dark:[&_em]:text-slate-300
+          "
+          dangerouslySetInnerHTML={{ __html: session.details }}
+        />
 
-        {showCommentArea && (
-          <div className="mt-2 animate-fade-in">
-            {isLoadingComment ? (
-              <p className="text-gray-500 text-sm">Cargando comentarios...</p>
+        <div className="mt-auto pt-5 border-t border-slate-200 dark:border-slate-800">
+          {/* ✅ Botón completar sesión */}
+          <div className="mb-4">
+            {isCompleted ? (
+              <div className="text-emerald-700 dark:text-emerald-300 font-semibold text-sm">
+                ✅ Entreno completado
+                {completedAt && (
+                  <p className="text-slate-600 dark:text-slate-400 font-normal mt-1">
+                    Completado el:{' '}
+                    {completedAt.toLocaleString('es-ES', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
+                )}
+              </div>
             ) : (
-              <>
-                {comments.map((c, i) => (
-                  <li key={i} className="p-2 bg-gray-50 border border-gray-200 rounded-md text-sm whitespace-pre-wrap">
-                    <div>{c.comment}</div>
-
-                    {c.coachTip && (
-                      <div className="mt-2 p-2 bg-white border rounded-md text-xs text-gray-700 whitespace-no-wrap">
-                       <FcIdea /><strong>Tip Coach :</strong> {c.coachTip}
-                      </div>
-                    )}
-                  </li>
-                ))}
-
-                <label
-                  htmlFor={`comment-${blockNumber}-${weekIndex}-${sessionIndex}`}
-                  className="text-sm font-semibold text-gray-600 block mb-1"
-                >
-                  Tus Notas:
-                </label>
-                <textarea
-                  id={`comment-${blockNumber}-${weekIndex}-${sessionIndex}`}
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md h-24 focus:ring-2 focus:ring-[#007bff] focus:border-transparent"
-                  placeholder="¿Cómo te sentiste? ¿Qué pesos usaste?"
-                  disabled={isCompleted}
-                />
-                <div className="flex justify-between items-center mt-2">
-                  <button
-                    onClick={handleSaveComment}
-                    className="bg-[#fd7e14] text-white text-sm font-bold py-1 px-3 rounded-md hover:bg-[#e46f12] transition-colors disabled:opacity-50"
-                    disabled={status === 'Guardando...' || isCompleted}
-                  >
-                    Guardar
-                  </button>
-                  <span
-                    className={`text-sm text-green-600 transition-opacity duration-300 ease-in-out ${status ? 'opacity-100' : 'opacity-0'
-                      }`}
-                  >
-                    {status}
-                  </span>
-                </div>
-              </>
+              <button
+                onClick={handleCompleteSession}
+                disabled={isLoadingCompleted}
+                className="
+                  inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black
+                  border shadow-sm transition active:scale-[0.98] disabled:opacity-50
+                  bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700
+                  dark:bg-gradient-to-r dark:from-emerald-400 dark:via-lime-400 dark:to-cyan-300
+                  dark:text-slate-950 dark:border-transparent dark:hover:opacity-95
+                "
+              >
+                {isLoadingCompleted ? 'Guardando...' : 'Marcar como completado'}
+              </button>
             )}
           </div>
-        )}
+
+          {/* Toggle comentarios */}
+          <button
+            onClick={() => setShowCommentArea(!showCommentArea)}
+            className="
+              w-full text-left text-sm font-black inline-flex items-center gap-2
+              text-blue-700 hover:text-blue-800
+              dark:text-emerald-300 dark:hover:text-emerald-200
+              transition
+            "
+          >
+            <FiMessageSquare className="h-4 w-4" />
+            {showCommentArea ? 'Ocultar Comentarios' : 'Ver/Añadir Comentarios'}
+          </button>
+
+          {showCommentArea && (
+            <div className="mt-3 animate-fade-in">
+              {isLoadingComment ? (
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  Cargando comentarios...
+                </p>
+              ) : (
+                <>
+                  {comments.length > 0 && (
+                    <ul className="mt-3 space-y-2">
+                      {comments.map((c, i) => (
+                        <li
+                          key={i}
+                          className="
+                            rounded-xl border p-3 text-sm whitespace-pre-wrap
+                            bg-slate-50 border-slate-200 text-slate-800
+                            dark:bg-slate-950/40 dark:border-slate-800 dark:text-slate-100
+                          "
+                        >
+                          <div>{c.comment}</div>
+
+                          {c.coachTip && (
+                            <div
+                              className="
+                                mt-3 rounded-xl border p-3 text-xs
+                                bg-white border-slate-200 text-slate-700
+                                dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200
+                              "
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className="mt-0.5">
+                                  <FcIdea />
+                                </div>
+                                <div className="leading-relaxed">
+                                  <strong className="text-slate-900 dark:text-slate-100">
+                                    Tip Coach:
+                                  </strong>{' '}
+                                  {c.coachTip}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+
+                  {/* Form */}
+                  <label
+                    htmlFor={`comment-${blockNumber}-${weekIndex}-${sessionIndex}`}
+                    className="mt-4 text-sm font-black text-slate-700 dark:text-slate-300 block mb-1"
+                  >
+                    Tus Notas:
+                  </label>
+
+                  <textarea
+                    id={`comment-${blockNumber}-${weekIndex}-${sessionIndex}`}
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    className="
+                      w-full rounded-xl border p-3 h-24 text-sm outline-none transition
+                      bg-white border-slate-200 text-slate-900
+                      focus:ring-2 focus:ring-blue-400/60 focus:border-transparent
+                      dark:bg-slate-900 dark:border-slate-800 dark:text-slate-100
+                      dark:focus:ring-2 dark:focus:ring-emerald-300/40
+                      disabled:opacity-60
+                    "
+                    placeholder="¿Cómo te sentiste? ¿Qué pesos usaste?"
+                    disabled={isCompleted}
+                  />
+
+                  <div className="flex justify-between items-center mt-3">
+                    <button
+                      onClick={handleSaveComment}
+                      disabled={status === 'Guardando...' || isCompleted}
+                      className="
+                        inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-black
+                        border shadow-sm transition active:scale-[0.98] disabled:opacity-50
+                        bg-orange-500 text-white border-orange-500 hover:bg-orange-600
+                        dark:bg-gradient-to-r dark:from-orange-400 dark:via-amber-300 dark:to-yellow-300
+                        dark:text-slate-950 dark:border-transparent dark:hover:opacity-95
+                      "
+                    >
+                      Guardar
+                    </button>
+
+                    <span
+                      className={`text-sm font-semibold transition-opacity duration-300 ease-in-out ${
+                        status ? 'opacity-100' : 'opacity-0'
+                      } text-emerald-700 dark:text-emerald-300`}
+                    >
+                      {status}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

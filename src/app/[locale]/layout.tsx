@@ -71,7 +71,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   return (
-    <html lang={locale}>
+    <html lang={locale} suppressHydrationWarning>
       <head>
         {/* Etiquetas meta PWA adicionales */}
         <meta name="theme-color" content="#111828" />

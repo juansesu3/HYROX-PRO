@@ -1,4 +1,8 @@
 @import "tailwindcss";
+
+/* hace que dark:* responda a .dark en el HTML (next-themes) */
+@custom-variant dark (&:where(.dark, .dark *));
+
 body{
   box-sizing: border-box;
   margin: 0;
@@ -32,9 +36,7 @@ li::before {
   color: #ff6a00;
   font-weight: bold;
 }
-b {
-  color: #212529;
-}
+
 hr {
   border: 0;
   height: 1px;
