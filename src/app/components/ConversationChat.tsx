@@ -172,7 +172,7 @@ export default function ChatConversation({ chatId, onBack, agentName, avatar, ag
             {/* Input */}
             <form
                 onSubmit={handleSendMessage}
-                className="flex items-center space-x-2 border-t border-gray-200 bg-white p-3
+                className="flex items-center space-x-2 border-t border-gray-200 bg-white p-3 mb-4
              sm:space-x-3 sm:p-4"
             >
                 <motion.button

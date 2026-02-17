@@ -1,10 +1,10 @@
-import ComingSoon from '@/app/components/ComingSoon'
 import React from 'react'
+import ChatHistory from '../../components/ChatHistory'
 
 const page = () => {
   return (
     <div>
-         <ComingSoon />
+        <ChatHistory />
     </div>
   )
 }
