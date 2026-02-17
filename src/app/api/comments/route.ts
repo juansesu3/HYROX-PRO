@@ -70,6 +70,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "Faltan parámetros" }, { status: 400 });
     }
 
+ 
+    
+
     const comments = await Comment.find({
       userId: session.user.id,
       blockNumber: Number(blockNumber),

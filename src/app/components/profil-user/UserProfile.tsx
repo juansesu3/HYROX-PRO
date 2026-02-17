@@ -174,7 +174,7 @@ export default function UserProfile() {
     const email = user?.email ?? session?.user?.email ?? "";
 
     return (
-        <div className="mx-auto max-w-6xl px-6 py-10 text-slate-900">
+        <div className="mx-auto max-w-6xl mb-20 px-6 py-10 text-slate-900">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
@@ -317,7 +317,7 @@ export default function UserProfile() {
                                                                 <div>
                                                                     <div className="text-sm font-semibold text-slate-900">{s.title}</div>
                                                                     <div className="text-xs text-slate-600">{s.focus}</div>
-                                                                    <div className="mt-2 text-sm text-slate-700">{s.details}</div>
+                                                                    <RichHtml html={s.details} />
                                                                 </div>
 
                                                                 <div className="flex flex-col items-end gap-2">
@@ -517,5 +517,42 @@ function Card({ title, children }: { title: string; children: any }) {
             <div className="text-base font-semibold text-slate-900">{title}</div>
             <div className="mt-3 text-slate-700">{children}</div>
         </div>
+    );
+}
+import DOMPurify from "dompurify";
+
+
+function normalizeDetails(html: string) {
+    const t = (html ?? "").trim();
+    // Si te llega solo "<li>...</li><li>...</li>" lo envolvemos
+    if (/^<li[\s>]/i.test(t) && !/<(ul|ol)[\s>]/i.test(t)) {
+        return `<ul>${t}</ul>`;
+    }
+    return t;
+}
+
+export function RichHtml({ html }: { html: string }) {
+    const safeHtml = useMemo(() => {
+        const normalized = normalizeDetails(html);
+
+        // Sanitiza (perfil html básico)
+        return DOMPurify.sanitize(normalized, { USE_PROFILES: { html: true } });
+    }, [html]);
+
+    return (
+        <div
+            className={[
+                "mt-2 text-sm text-slate-700",
+                // estilos para elementos HTML
+                "[&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-2",
+                "[&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-2",
+                "[&_li]:my-1",
+                "[&_p]:my-2",
+                "[&_strong]:text-slate-900",
+                "[&_a]:text-blue-600 [&_a]:underline hover:[&_a]:text-blue-800",
+                "[&_code]:px-1 [&_code]:py-0.5 [&_code]:rounded [&_code]:bg-slate-100",
+            ].join(" ")}
+            dangerouslySetInnerHTML={{ __html: safeHtml }}
+        />
     );
 }

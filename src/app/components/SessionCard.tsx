@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Session } from '../lib/definitions';
 import Swal from 'sweetalert2';
-
+import { FcIdea } from "react-icons/fc";
 interface SessionCardProps {
   session: Session;
   blockNumber: number;
@@ -17,8 +17,11 @@ export default function SessionCard({
   weekIndex,
   sessionIndex,
 }: SessionCardProps) {
+  type CommentItem = { comment: string; coachTip?: string };
+
+  const [comments, setComments] = useState<CommentItem[]>([]);
   const [comment, setComment] = useState('');
-  const [comments, setComments] = useState<string[]>([]);
+
   const [status, setStatus] = useState('');
   const [showCommentArea, setShowCommentArea] = useState(false);
   const [isLoadingComment, setIsLoadingComment] = useState(false);
@@ -39,7 +42,7 @@ export default function SessionCard({
         if (response.ok) {
           const data = await response.json();
           if (Array.isArray(data)) {
-            setComments(data.map((c) => c.comment));
+            setComments(data.map((c) => ({ comment: c.comment, coachTip: c.coachTip })));
           } else {
             setComments([]);
           }
@@ -92,7 +95,7 @@ export default function SessionCard({
           weekIndex,
           sessionIndex,
           comment,
-        
+
           // ✅ contexto para el tip
           sessionTitle: session.title,
           sessionFocus: session.focus,
@@ -105,7 +108,10 @@ export default function SessionCard({
         setStatus('¡Guardado!');
         // Agregar el nuevo comentario a la lista
         const data = await response.json();
-        setComments([data.data.comment, ...comments]);
+        setComments((prev) => [
+          { comment: data.data.comment, coachTip: data.data.coachTip },
+          ...prev,
+        ]);
       } else {
         const errorData = await response.json();
         setStatus(`Error: ${errorData.message}`);
@@ -238,21 +244,17 @@ export default function SessionCard({
               <p className="text-gray-500 text-sm">Cargando comentarios...</p>
             ) : (
               <>
-                {comments.length > 0 && (
-                  <div className="mb-3">
-                    <strong className="text-sm text-gray-700">Comentarios previos:</strong>
-                    <ul className="mt-2 space-y-2">
-                      {comments.map((c, i) => (
-                        <li
-                          key={i}
-                          className="p-2 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700 whitespace-pre-wrap"
-                        >
-                          {c}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                {comments.map((c, i) => (
+                  <li key={i} className="p-2 bg-gray-50 border border-gray-200 rounded-md text-sm whitespace-pre-wrap">
+                    <div>{c.comment}</div>
+
+                    {c.coachTip && (
+                      <div className="mt-2 p-2 bg-white border rounded-md text-xs text-gray-700 whitespace-no-wrap">
+                       <FcIdea /><strong>Tip Coach :</strong> {c.coachTip}
+                      </div>
+                    )}
+                  </li>
+                ))}
 
                 <label
                   htmlFor={`comment-${blockNumber}-${weekIndex}-${sessionIndex}`}
@@ -277,9 +279,8 @@ export default function SessionCard({
                     Guardar
                   </button>
                   <span
-                    className={`text-sm text-green-600 transition-opacity duration-300 ease-in-out ${
-                      status ? 'opacity-100' : 'opacity-0'
-                    }`}
+                    className={`text-sm text-green-600 transition-opacity duration-300 ease-in-out ${status ? 'opacity-100' : 'opacity-0'
+                      }`}
                   >
                     {status}
                   </span>
